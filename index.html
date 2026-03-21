@@ -1,0 +1,2483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bayesian Re-Analysis Tool</title>
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+<style>
+:root {
+  --primary: #15736b;
+  --primary-deep: #0d3f3d;
+  --primary-light: #ddf3ee;
+  --primary-soft: #f2faf8;
+  --accent: #c5673a;
+  --accent-soft: #f8e3d6;
+  --canvas: #f4efe7;
+  --canvas-deep: #e7ddd0;
+  --card: rgba(255, 255, 255, 0.94);
+  --surface: #ffffff;
+  --surface-alt: #f7fbfa;
+  --text: #18333f;
+  --text-light: #5d707a;
+  --border: rgba(24, 51, 63, 0.12);
+  --danger: #b53a31;
+  --success: #17775d;
+  --warning: #9b6b1c;
+  --radius: 22px;
+  --shadow: 0 18px 60px rgba(24, 51, 63, 0.08);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(197, 103, 58, 0.10), transparent 26%),
+    radial-gradient(circle at top right, rgba(21, 115, 107, 0.12), transparent 30%),
+    linear-gradient(180deg, #fbf8f3 0%, var(--canvas) 100%);
+  color: var(--text);
+  line-height: 1.6;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background-image: linear-gradient(rgba(24, 51, 63, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(24, 51, 63, 0.03) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.12), transparent 78%);
+  pointer-events: none;
+  z-index: -1;
+}
+.container { width: min(1280px, calc(100% - 40px)); margin: 0 auto; position: relative; }
+h1, h2, h3, h4 { font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", serif; letter-spacing: -0.02em; }
+a { color: inherit; }
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  color: white;
+  background:
+    radial-gradient(circle at 15% 15%, rgba(255, 255, 255, 0.16), transparent 20%),
+    radial-gradient(circle at 85% 18%, rgba(255, 255, 255, 0.12), transparent 20%),
+    linear-gradient(135deg, #0c2f37 0%, #13525a 36%, #15736b 100%);
+  padding: 48px 0 30px;
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  width: 360px;
+  height: 360px;
+  right: -120px;
+  bottom: -180px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 1.1fr);
+  gap: 28px;
+  align-items: end;
+}
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.hero-copy h1 {
+  font-size: clamp(2.6rem, 5vw, 4.6rem);
+  line-height: 0.95;
+  margin: 0 0 16px;
+}
+.hero-copy p {
+  max-width: 62ch;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 1rem;
+}
+.hero-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 26px;
+}
+.hero-badges {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+.hero-badge {
+  padding: 9px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.83rem;
+}
+.hero-panel {
+  position: relative;
+  z-index: 1;
+  background: rgba(18, 30, 38, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  padding: 24px 28px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.18);
+}
+.hero-panel h3 {
+  margin-bottom: 14px;
+  font-size: 1.3rem;
+}
+.hero-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.hero-stat {
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  overflow: hidden;
+}
+.hero-stat strong {
+  display: block;
+  font-size: clamp(1.1rem, 2.5vw, 1.55rem);
+  line-height: 1.1;
+  margin-bottom: 6px;
+  white-space: nowrap;
+}
+.hero-stat span {
+  display: block;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.83rem;
+}
+.hero-note {
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 0.9rem;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.main-shell {
+  margin-top: -8px;
+  padding: 0 0 64px;
+}
+.main-tab-bar {
+  position: sticky;
+  top: 16px;
+  z-index: 10;
+  display: inline-flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px;
+  margin: 0 0 24px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(24, 51, 63, 0.08);
+  border-radius: 999px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 8px 24px rgba(24, 51, 63, 0.08);
+}
+.main-tab-btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.94rem;
+  font-weight: 700;
+  color: var(--text-light);
+  transition: 0.2s ease;
+}
+.main-tab-btn:hover {
+  background: rgba(21, 115, 107, 0.08);
+  color: var(--primary-deep);
+}
+.main-tab-btn.active {
+  background: var(--primary-deep);
+  color: white;
+  box-shadow: 0 10px 24px rgba(13, 63, 61, 0.22);
+}
+.main-tab-panel { display: none; }
+.main-tab-panel.active { display: block; }
+
+.workflow-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.workflow-card {
+  padding: 18px 20px;
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.70);
+  border: 1px solid rgba(24, 51, 63, 0.08);
+  backdrop-filter: blur(10px);
+}
+.workflow-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  background: var(--primary-deep);
+  color: white;
+  font-weight: 700;
+}
+.workflow-card h3 {
+  margin-bottom: 6px;
+  font-size: 1.15rem;
+}
+.workflow-card p {
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid rgba(24, 51, 63, 0.08);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 28px;
+  margin-bottom: 20px;
+}
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-deep), var(--primary), var(--accent));
+}
+.card-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.card-kicker {
+  display: inline-flex;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: var(--primary-light);
+  color: var(--primary-deep);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.74rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.card h2 {
+  font-size: 1.58rem;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.card-subtitle {
+  max-width: 72ch;
+  color: var(--text-light);
+  font-size: 0.95rem;
+}
+.pill-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: #7f4527;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.section-slab {
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--surface-alt);
+  border: 1px solid rgba(24, 51, 63, 0.08);
+}
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.grid-5 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; }
+
+label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-light);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+input, select {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fbfcfb;
+  color: var(--text);
+  font-size: 0.96rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: rgba(21, 115, 107, 0.55);
+  box-shadow: 0 0 0 4px rgba(21, 115, 107, 0.12);
+  transform: translateY(-1px);
+}
+.input-group { margin-bottom: 14px; }
+.field-note {
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--text-light);
+}
+
+.radio-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.radio-option { position: relative; }
+.radio-option input { display: none; }
+.radio-option label {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--text);
+  cursor: pointer;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  transition: 0.2s ease;
+}
+.radio-option input:checked + label {
+  background: var(--primary-deep);
+  color: white;
+  border-color: var(--primary-deep);
+  box-shadow: 0 10px 24px rgba(13, 63, 61, 0.18);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px 24px;
+  border: none;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  text-decoration: none;
+}
+.btn:hover {
+  transform: translateY(-1px);
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary-deep), var(--primary));
+  color: white;
+  box-shadow: 0 14px 28px rgba(13, 63, 61, 0.22);
+}
+.btn-primary:hover {
+  box-shadow: 0 18px 30px rgba(13, 63, 61, 0.28);
+}
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.76);
+  color: var(--primary-deep);
+  border: 1px solid rgba(21, 115, 107, 0.18);
+}
+.btn-secondary:hover {
+  background: white;
+  box-shadow: 0 10px 24px rgba(24, 51, 63, 0.10);
+}
+.btn-center { text-align: center; margin-top: 20px; }
+
+.action-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+.action-copy {
+  max-width: 60ch;
+  color: var(--text-light);
+  font-size: 0.9rem;
+}
+
+.hidden { display: none !important; }
+
+.notice {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-radius: 18px;
+  margin-top: 18px;
+  font-size: 0.9rem;
+}
+.notice::before {
+  content: "";
+  flex: 0 0 10px;
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  border-radius: 50%;
+}
+.notice.hidden { display: none !important; }
+.notice-info {
+  background: var(--primary-light);
+  border: 1px solid rgba(21, 115, 107, 0.18);
+  color: var(--primary-deep);
+}
+.notice-info::before { background: var(--primary); }
+.notice-warning {
+  background: #fff6e9;
+  border: 1px solid #f0d6a6;
+  color: var(--warning);
+}
+.notice-warning::before { background: #c08a27; }
+.notice-error {
+  background: #fff0ee;
+  border: 1px solid rgba(181, 58, 49, 0.20);
+  color: var(--danger);
+}
+.notice-error::before { background: var(--danger); }
+
+.tab-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.tab-btn {
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-alt);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-light);
+  transition: 0.2s ease;
+}
+.tab-btn.active {
+  background: var(--primary-deep);
+  border-color: var(--primary-deep);
+  color: white;
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.table-wrap {
+  overflow: auto;
+  border-radius: 20px;
+  border: 1px solid rgba(24, 51, 63, 0.08);
+  background: var(--surface-alt);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+  margin-top: 0;
+}
+th {
+  background: var(--primary-deep);
+  color: white;
+  padding: 14px 10px;
+  text-align: center;
+  font-weight: 700;
+}
+td {
+  padding: 12px 10px;
+  text-align: center;
+  border-bottom: 1px solid rgba(24, 51, 63, 0.08);
+}
+tr:nth-child(even) { background: #f8fbfa; }
+tr:hover { background: var(--primary-light); }
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.tag-benefit { background: #daf3e7; color: #145b47; }
+.tag-harm { background: #fce3df; color: #8a2f2a; }
+.tag-neutral { background: #edf1f2; color: #4a5e67; }
+.tag-ni { background: #ddf1fb; color: #0d6282; }
+
+.stat-box {
+  text-align: center;
+  padding: 20px 18px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #f6fffd 0%, var(--primary-light) 100%);
+  border: 1px solid rgba(21, 115, 107, 0.10);
+}
+.stat-box .value {
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--primary-deep);
+}
+.stat-box .label {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  color: var(--text-light);
+}
+
+.prior-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.prior-grid-row-label {
+  grid-column: 1 / -1;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 4px 0;
+  color: var(--text-light);
+}
+.prior-grid-row-label:not(:first-child) { margin-top: 4px; }
+.prior-cb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: white;
+  font-size: 0.84rem;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+.prior-cb.neutral  { border-color: rgba(21,115,107,0.22); background: #f2faf8; }
+.prior-cb.optimist { border-color: rgba(37,99,180,0.22); background: #eef4fb; }
+.prior-cb.pessim   { border-color: rgba(181,58,49,0.22);  background: #fdf2f1; }
+.prior-cb.neutral:hover  { background: #ddf3ee; border-color: rgba(21,115,107,0.40); }
+.prior-cb.optimist:hover { background: #dce8f7; border-color: rgba(37,99,180,0.40); }
+.prior-cb.pessim:hover   { background: #f8dfdd; border-color: rgba(181,58,49,0.40); }
+.prior-cb input {
+  width: auto;
+  min-height: auto;
+  accent-color: var(--primary-deep);
+  margin: 0;
+}
+.prior-cb.optimist input { accent-color: #2563b4; }
+.prior-cb.pessim input   { accent-color: #b53a31; }
+
+.results-section { display: none; }
+.results-lead {
+  margin: 4px 0 0;
+  color: var(--text-light);
+  font-size: 0.98rem;
+}
+
+.info-box {
+  background: #fff8ec;
+  border: 1px solid #f2d89d;
+  border-radius: 18px;
+  padding: 14px 16px;
+  margin: 12px 0;
+  font-size: 0.88rem;
+  color: var(--warning);
+}
+
+.interpretation {
+  background: linear-gradient(180deg, #fbfffe 0%, #f4fbf9 100%);
+  border-left: 4px solid var(--primary);
+  border-radius: 18px;
+  padding: 18px 20px;
+  margin: 16px 0;
+  font-size: 0.92rem;
+  line-height: 1.75;
+}
+.interpretation h4 {
+  color: var(--primary-deep);
+  margin-bottom: 8px;
+}
+.interpretation p { margin-bottom: 8px; }
+.interpretation strong { color: var(--text); }
+
+.ref {
+  font-size: 0.78rem;
+  color: var(--text-light);
+  padding-top: 6px;
+}
+
+.collapse-header {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid rgba(24, 51, 63, 0.08);
+  border-radius: 18px;
+  background: var(--surface-alt);
+}
+.collapse-header:hover { border-color: rgba(21, 115, 107, 0.18); }
+.collapse-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+.collapse-content.open {
+  max-height: 5000px;
+  padding-top: 14px;
+}
+
+#loading {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 47, 55, 0.24);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(4px);
+}
+#loading.show { display: flex; }
+.spinner {
+  width: 52px;
+  height: 52px;
+  border: 4px solid rgba(255, 255, 255, 0.5);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.guide-intro {
+  background: linear-gradient(180deg, #f6fffd 0%, var(--primary-light) 100%);
+  padding: 22px;
+  border-radius: 20px;
+  margin: 16px 0;
+}
+.guide-intro h3 { color: var(--primary-deep); margin-bottom: 8px; }
+.guide-intro p { margin-bottom: 8px; font-size: 0.92rem; }
+.guide-steps { margin: 20px 0; }
+.guide-step {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(24, 51, 63, 0.08);
+}
+.guide-step:last-child { border-bottom: none; }
+.step-number {
+  min-width: 42px;
+  height: 42px;
+  background: var(--primary-deep);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.step-content { flex: 1; }
+.step-content h4 { color: var(--text); margin-bottom: 6px; font-size: 1rem; }
+.step-content p { font-size: 0.9rem; margin-bottom: 6px; }
+.step-content ul, .step-content ol { font-size: 0.9rem; margin: 6px 0 6px 20px; }
+.step-content li { margin-bottom: 4px; }
+.guide-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin: 10px 0;
+}
+.guide-table th {
+  background: var(--primary-light);
+  color: var(--primary-deep);
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 700;
+}
+.guide-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(24, 51, 63, 0.08);
+  vertical-align: top;
+  text-align: left;
+}
+.guide-table tr:hover { background: #f8fbfa; }
+.guide-tip {
+  background: #eef9f1;
+  border: 1px solid #c8ebd5;
+  border-radius: 14px;
+  padding: 10px 12px;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #196046;
+}
+.guide-tip::before { content: "Tip: "; font-weight: 700; }
+.guide-example {
+  background: #eff7ff;
+  border-left: 3px solid var(--primary);
+  padding: 8px 12px;
+  margin: 8px 0;
+  font-size: 0.88rem;
+  border-radius: 0 12px 12px 0;
+}
+.guide-example-box {
+  background: var(--surface-alt);
+  border: 1px solid rgba(24, 51, 63, 0.08);
+  border-radius: 20px;
+  padding: 20px;
+  margin: 12px 0;
+}
+.guide-example-box p { font-size: 0.9rem; margin-bottom: 8px; }
+.guide-example-box ol { font-size: 0.9rem; margin: 8px 0 8px 20px; }
+.guide-example-box li { margin-bottom: 4px; }
+.guide-results { margin: 12px 0; }
+.guide-result-item {
+  background: var(--surface-alt);
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid rgba(24, 51, 63, 0.08);
+}
+.guide-result-item h4 { color: var(--primary-deep); margin-bottom: 8px; font-size: 0.95rem; }
+.guide-result-item ul { font-size: 0.88rem; margin: 4px 0 0 16px; }
+.guide-result-item li { margin-bottom: 4px; }
+.guide-result-item p { font-size: 0.88rem; margin-bottom: 6px; }
+.guide-glossary { margin-top: 16px; }
+.guide-glossary h3 { color: var(--primary-deep); margin-bottom: 10px; }
+.ni-highlight {
+  background: #e4f4fb;
+  border: 1px solid #b9deef;
+  border-radius: 18px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  font-size: 0.85rem;
+  color: #13536b;
+}
+
+@media (max-width: 1024px) {
+  .hero-grid,
+  .workflow-grid,
+  .grid-4 {
+    grid-template-columns: 1fr;
+  }
+  .hero-stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 768px) {
+  .container { width: min(100%, calc(100% - 24px)); }
+  .hero { padding-top: 32px; }
+  .hero-copy h1 { font-size: clamp(2.2rem, 13vw, 3.5rem); }
+  .main-tab-bar { display: flex; width: 100%; top: 10px; }
+  .main-tab-btn { flex: 1; }
+  .card { padding: 22px; }
+  .card-title-row,
+  .action-row,
+  .hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hero-stat-grid,
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: 1fr;
+  }
+  .radio-option { width: 100%; }
+  .radio-option label { display: block; width: 100%; text-align: center; }
+  .guide-step { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="hero-copy">
+      <h1>Bayesian Trial Reanalysis</h1>
+      <p>Single-page clinical trial workbench for Bayesian re-analysis of superiority and non-inferiority studies.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" onclick="switchMainTab('analysis')">Open Analysis</button>
+        <button class="btn btn-secondary" onclick="loadARTExample(); switchMainTab('analysis');">Load ART Example</button>
+      </div>
+    </div>
+
+    <div class="hero-panel">
+      <h3>What this page gives you</h3>
+      <div class="hero-stat-grid">
+        <div class="hero-stat" style="background:rgba(221,243,238,0.18); border-color:rgba(221,243,238,0.28);">
+          <strong>P(Benefit)</strong>
+          <span>Posterior probability on the selected ratio scale</span>
+        </div>
+        <div class="hero-stat" style="background:rgba(173,200,245,0.18); border-color:rgba(173,200,245,0.28);">
+          <strong>P(NI)</strong>
+          <span>Non-inferiority probability when an NI margin is provided</span>
+        </div>
+        <div class="hero-stat" style="background:rgba(251,206,140,0.18); border-color:rgba(251,206,140,0.28);">
+          <strong>I²</strong>
+          <span>Sensitivity to prior choice across the selected grid</span>
+        </div>
+      </div>
+      <p class="hero-note">Reference basis: Zampieri FG et al. <em>Am J Respir Crit Care Med</em>. 2021;203(5):543-552, with supplementary appendix conventions for prior strength and heterogeneity summaries.</p>
+    </div>
+  </div>
+</section>
+
+<div class="container main-shell">
+
+<!-- MAIN TAB BAR -->
+<div class="main-tab-bar">
+  <button class="main-tab-btn active" onclick="switchMainTab('analysis')">Analysis Workspace</button>
+  <button class="main-tab-btn" onclick="switchMainTab('guide')">Method Guide</button>
+</div>
+
+<!-- ==================== ANALYSIS TAB ==================== -->
+<div class="main-tab-panel active" id="mainTab_analysis">
+
+<div class="workflow-grid">
+  <div class="workflow-card">
+    <div class="workflow-index">1</div>
+    <h3>Enter the study</h3>
+    <p>Choose trial design, supply the reported effect measure or 2x2 counts, and define whether lower or higher ratios mean benefit.</p>
+  </div>
+  <div class="workflow-card">
+    <div class="workflow-index">2</div>
+    <h3>Select priors</h3>
+    <p>Use the Zampieri scenarios or manually choose skeptical, optimistic, and pessimistic priors with weak, moderate, or strong strength.</p>
+  </div>
+  <div class="workflow-card">
+    <div class="workflow-index">3</div>
+    <h3>Read the posterior</h3>
+    <p>See summary boxes, sensitivity across priors, distribution plots, heterogeneity, and a clinician-facing interpretation block.</p>
+  </div>
+</div>
+
+<!-- INPUT SECTION -->
+<div class="card">
+  <div class="card-title-row">
+    <div>
+      <span class="card-kicker">Study Setup</span>
+      <h2>Trial input and effect measure</h2>
+      <p class="card-subtitle">Start with the reported estimate from the manuscript. For binary outcomes you can enter the published ratio with its confidence interval or derive an odds ratio from raw event counts.</p>
+    </div>
+    <div class="pill-note">Fastest path: ratio + 95% CI</div>
+  </div>
+
+  <div id="analysisMessage" class="notice notice-warning hidden"></div>
+
+  <!-- Study Design -->
+  <div class="section-slab" style="margin-bottom:16px;">
+    <div class="input-group">
+      <label>Study Design</label>
+      <div class="radio-group">
+        <div class="radio-option"><input type="radio" name="studyDesign" id="designSup" value="superiority" checked><label for="designSup">Superiority</label></div>
+        <div class="radio-option"><input type="radio" name="studyDesign" id="designNI" value="noninferiority"><label for="designNI">Non-Inferiority</label></div>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <label>Input Type</label>
+      <div class="radio-group">
+        <div class="radio-option"><input type="radio" name="inputType" id="inputOR" value="or" checked><label for="inputOR">Odds Ratio + 95% CI</label></div>
+        <div class="radio-option"><input type="radio" name="inputType" id="inputRR" value="rr"><label for="inputRR">Risk Ratio + 95% CI</label></div>
+        <div class="radio-option"><input type="radio" name="inputType" id="inputHR" value="hr"><label for="inputHR">Hazard Ratio + 95% CI</label></div>
+        <div class="radio-option"><input type="radio" name="inputType" id="inputEvents" value="events"><label for="inputEvents">Event Counts (2x2)</label></div>
+        <div class="radio-option"><input type="radio" name="inputType" id="inputLogOR" value="logor"><label for="inputLogOR">log(OR) + SE</label></div>
+      </div>
+      <div class="field-note" id="measureModeNote">Bayesian updating runs on the log-ratio scale. OR, RR, and HR are handled on their own reported ratio scale; 2x2 tables produce an odds ratio.</div>
+    </div>
+  </div>
+
+  <!-- NI Settings (hidden by default) -->
+  <div id="niSettings" class="hidden section-slab" style="background:#e7f6f3; margin-bottom:16px;">
+    <h3 style="color:#0d6282; margin-top:0;">Non-Inferiority Settings</h3>
+    <div class="grid-3">
+      <div class="input-group">
+        <label>NI Margin Format</label>
+        <select id="niFormat" onchange="toggleNIFormat()">
+          <option value="ratio">NI Margin on Selected Ratio Scale</option>
+          <option value="absolute">NI Margin as Absolute Risk Difference</option>
+        </select>
+        <div class="field-note" id="niFormatSupportNote">Absolute risk-difference conversion is only available for odds-ratio analyses based on OR or 2x2 inputs.</div>
+      </div>
+      <div class="input-group">
+        <label id="niMarginLabel">NI Margin (Ratio)</label>
+        <input type="number" id="niMargin" step="0.01" value="1.2" placeholder="e.g. 1.2">
+        <div id="niMarginDesc" class="field-note">Treatment is non-inferior if the posterior ratio remains below this threshold.</div>
+      </div>
+      <div class="input-group hidden" id="niBaselineGroup">
+        <label>Control Group Event Rate (%)</label>
+        <input type="number" id="niBaseline" step="0.1" placeholder="e.g. 25">
+        <div class="field-note">Needed only when converting an absolute risk difference to an odds-ratio NI margin.</div>
+      </div>
+    </div>
+    <div id="niConvertedInfo" class="notice notice-info hidden"></div>
+  </div>
+
+  <div class="section-slab">
+    <div class="grid-2" style="margin-bottom:8px;">
+      <div class="input-group">
+        <label>Study Name (optional)</label>
+        <input type="text" id="studyName" placeholder="e.g. ART Trial">
+      </div>
+      <div class="input-group">
+        <label>Outcome Type</label>
+        <select id="outcomeType">
+          <option value="bad">Bad Outcome (lower ratio = benefit)</option>
+          <option value="good">Good Outcome (higher ratio = benefit)</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="ratioInput">
+      <div class="grid-3">
+        <div class="input-group">
+          <label id="ratioLabel">Odds Ratio</label>
+          <input type="number" id="effectSize" step="0.01" placeholder="e.g. 1.27">
+        </div>
+        <div class="input-group">
+          <label>Lower 95% CI</label>
+          <input type="number" id="ciLower" step="0.01" placeholder="e.g. 0.99">
+        </div>
+        <div class="input-group">
+          <label>Upper 95% CI</label>
+          <input type="number" id="ciUpper" step="0.01" placeholder="e.g. 1.63">
+        </div>
+      </div>
+    </div>
+
+    <div id="eventsInput" class="hidden">
+      <div class="grid-4">
+        <div class="input-group">
+          <label>Events (Treatment)</label>
+          <input type="number" id="eventsTx" placeholder="e.g. 167">
+        </div>
+        <div class="input-group">
+          <label>Total (Treatment)</label>
+          <input type="number" id="totalTx" placeholder="e.g. 501">
+        </div>
+        <div class="input-group">
+          <label>Events (Control)</label>
+          <input type="number" id="eventsCtrl" placeholder="e.g. 142">
+        </div>
+        <div class="input-group">
+          <label>Total (Control)</label>
+          <input type="number" id="totalCtrl" placeholder="e.g. 509">
+        </div>
+      </div>
+      <div class="field-note">If any cell is zero, the app applies a Haldane-Anscombe continuity correction by adding `0.5` to all four cells before estimating the odds ratio and its standard error.</div>
+    </div>
+
+    <div id="logORInput" class="hidden">
+      <div class="grid-2">
+        <div class="input-group">
+          <label>log(OR)</label>
+          <input type="number" id="logOR" step="0.01" placeholder="e.g. 0.24">
+        </div>
+        <div class="input-group">
+          <label>Standard Error</label>
+          <input type="number" id="se" step="0.01" placeholder="e.g. 0.13">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRIOR SETTINGS -->
+<div class="card">
+  <div class="card-title-row">
+    <div>
+      <span class="card-kicker">Prior Model</span>
+      <h2>Prior configuration and clinical thresholds</h2>
+      <p class="card-subtitle">The neutral priors are your skeptical anchors. Optimistic and pessimistic priors are centered symmetrically around the expected study effect, following the Zampieri grid.</p>
+    </div>
+    <div class="pill-note">Include at least one skeptical prior</div>
+  </div>
+
+  <div class="section-slab" style="margin-bottom:16px;">
+    <div class="grid-2">
+      <div class="input-group">
+        <label id="expectedRatioLabel">Expected Odds Ratio for Trial Design</label>
+        <input type="number" id="expectedOR" step="0.01" value="0.75" placeholder="e.g. 0.66">
+        <div class="field-note" id="expectedRatioNote">Used to center the optimistic and pessimistic priors on the currently selected ratio scale.</div>
+      </div>
+      <div class="input-group">
+        <label>Prior Scenario (Table 2, Zampieri 2021)</label>
+        <select id="priorScenario" onchange="updatePriorScenario()">
+          <option value="custom">Custom / Manual Selection</option>
+          <option value="little_info">Little to no prior information (all Weak)</option>
+          <option value="conflicting" selected>Conflicting evidence (Moderate / Moderate / Moderate)</option>
+          <option value="benefit_no_outlier">Evidence toward benefit, no outliers (Moderate / Moderate / Weak)</option>
+          <option value="benefit_outlier">Evidence toward benefit, with outliers (Moderate / Moderate / Moderate)</option>
+          <option value="consecrated">Consecrated beneficial intervention (Moderate / Strong / Weak)</option>
+          <option value="low_rationale">Low rationale for direct effect (Strong / Weak / Weak)</option>
+          <option value="many_neutral">Several neutral trials, near futility (Strong / Weak / Weak)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-bottom:10px;">Select priors to include</h3>
+  <div class="prior-checkbox-grid" id="priorCheckboxes">
+    <div class="prior-grid-row-label">Neutral</div>
+    <label class="prior-cb neutral"><input type="checkbox" id="cb_nw" checked> Weak</label>
+    <label class="prior-cb neutral"><input type="checkbox" id="cb_nm" checked> Moderate</label>
+    <label class="prior-cb neutral"><input type="checkbox" id="cb_ns" checked> Strong</label>
+    <div class="prior-grid-row-label">Optimistic</div>
+    <label class="prior-cb optimist"><input type="checkbox" id="cb_ow" checked> Weak</label>
+    <label class="prior-cb optimist"><input type="checkbox" id="cb_om" checked> Moderate</label>
+    <label class="prior-cb optimist"><input type="checkbox" id="cb_os"> Strong</label>
+    <div class="prior-grid-row-label">Pessimistic</div>
+    <label class="prior-cb pessim"><input type="checkbox" id="cb_pw" checked> Weak</label>
+    <label class="prior-cb pessim"><input type="checkbox" id="cb_pm" checked> Moderate</label>
+    <label class="prior-cb pessim"><input type="checkbox" id="cb_ps"> Strong</label>
+  </div>
+
+  <div class="collapse-header" onclick="toggleCollapse('thresholdSettings')" style="margin-top:20px;">
+    <h3 style="margin:0;">Clinical thresholds</h3>
+    <span id="thresholdSettingsArrow">&#9660;</span>
+  </div>
+  <div class="collapse-content" id="thresholdSettings">
+    <div class="field-note" style="margin:8px 0 0;">Defaults are aligned with the odds-ratio examples from the paper, but you can reuse the same null-centered threshold logic on RR or HR when that better matches the published outcome measure.</div>
+    <div id="thresholdInfo" class="info-box"></div>
+    <div class="grid-4" style="margin-top:8px;">
+      <div class="input-group">
+        <label id="severeHarmLabel">Severe Harm Threshold</label>
+        <input type="number" id="severeHarmOR" step="0.01" value="1.25" placeholder="1.25">
+        <div id="severeHarmDesc" class="field-note"></div>
+      </div>
+      <div class="input-group">
+        <label id="importantBenefitLabel">Important Benefit Threshold</label>
+        <input type="number" id="importantBenefitOR" step="0.01" value="0.80" placeholder="0.80">
+        <div id="importantBenefitDesc" class="field-note"></div>
+      </div>
+      <div class="input-group">
+        <label id="ropeLowerLabel">ROPE Lower Bound</label>
+        <input type="number" id="ropeLower" step="0.01" value="0.91" placeholder="0.91">
+        <div class="field-note">Below this = outside equivalence</div>
+      </div>
+      <div class="input-group">
+        <label id="ropeUpperLabel">ROPE Upper Bound</label>
+        <input type="number" id="ropeUpper" step="0.01" value="1.1" placeholder="1.1">
+        <div class="field-note">Above this = outside equivalence</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="collapse-header" onclick="toggleCollapse('advancedSettings')" style="margin-top:16px;">
+    <h3 style="margin:0;">Custom prior</h3>
+    <span id="advancedSettingsArrow">&#9660;</span>
+  </div>
+  <div class="collapse-content" id="advancedSettings">
+    <div class="grid-3" style="margin-top:12px;">
+      <div class="input-group">
+        <label id="customMeanLabel">Custom Prior Mean (log OR)</label>
+        <input type="number" id="customMean" step="0.01" placeholder="e.g. 0">
+      </div>
+      <div class="input-group">
+        <label>Custom Prior SD</label>
+        <input type="number" id="customSD" step="0.01" placeholder="e.g. 0.5">
+      </div>
+      <div class="input-group">
+        <label>Custom Prior Name</label>
+        <input type="text" id="customName" placeholder="e.g. Meta-analysis prior">
+      </div>
+    </div>
+  </div>
+
+  <div class="action-row">
+    <p class="action-copy">Use the scenario defaults if you want a standardized read. If you are working from external evidence, keep the scenario as manual and add a custom prior in log-ratio units.</p>
+    <button class="btn btn-primary" onclick="runAnalysis()">Run Bayesian Re-Analysis</button>
+  </div>
+</div>
+
+<!-- RESULTS SECTION -->
+<div class="results-section" id="resultsSection">
+
+  <!-- Summary Stats -->
+  <div class="card">
+    <div class="card-title-row">
+      <div>
+        <span class="card-kicker">Posterior Summary</span>
+        <h2 id="resultsTitle">Results</h2>
+        <p id="resultsSubtitle" class="results-lead"></p>
+      </div>
+      <div class="pill-note" id="resultsMeasurePill">Ratio scale</div>
+    </div>
+    <div class="grid-5" id="summaryBoxes"></div>
+  </div>
+
+  <!-- Results Table -->
+  <div class="card">
+    <div class="card-title-row">
+      <div>
+        <span class="card-kicker">Per Prior</span>
+        <h2>Posterior summary table</h2>
+        <p class="card-subtitle">Each row shows the posterior estimate and clinically relevant probabilities under one prior. The flat prior is included as a reference, not as a recommended prior.</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="resultsTable">
+        <thead id="resultsHead"></thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Posterior Distribution Plots -->
+  <div class="card">
+    <div class="card-title-row">
+      <div>
+        <span class="card-kicker">Distribution View</span>
+        <h2>Posterior distributions</h2>
+        <p class="card-subtitle">Use the combined view to inspect overlap across priors, then switch to individual priors for threshold-level cumulative probabilities.</p>
+      </div>
+    </div>
+    <div class="tab-buttons" id="plotTabs"></div>
+    <div id="plotContainers"></div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Forest Plot -->
+    <div class="card">
+      <div class="card-title-row">
+        <div>
+          <span class="card-kicker">Cross-Prior Spread</span>
+          <h2>Forest plot across priors</h2>
+        </div>
+      </div>
+      <div id="forestPlot" style="width:100%;height:450px;"></div>
+    </div>
+
+    <!-- Heterogeneity -->
+    <div class="card">
+      <div class="card-title-row">
+        <div>
+          <span class="card-kicker">Sensitivity</span>
+          <h2>Heterogeneity assessment</h2>
+          <p class="card-subtitle">This meta-analytic summary treats each posterior under a different prior as one sensitivity scenario and estimates how much the conclusion shifts with prior choice.</p>
+        </div>
+      </div>
+      <div id="hetResults"></div>
+      <div id="hetPlot" style="width:100%;height:350px;"></div>
+    </div>
+  </div>
+
+  <!-- Text Interpretation -->
+  <div class="card">
+    <div class="card-title-row">
+      <div>
+        <span class="card-kicker">Narrative Readout</span>
+        <h2>Interpretation</h2>
+      </div>
+    </div>
+    <div id="textInterpretation"></div>
+  </div>
+
+  <!-- Reference -->
+  <div class="card">
+    <div class="ref">
+      <strong>Reference:</strong> Zampieri FG, Casey JD, Shankar-Hari M, Harrell FE Jr, Harhay MO. Using Bayesian Methods to Augment the Interpretation of Critical Care Trials. <em>Am J Respir Crit Care Med</em>. 2021;203(5):543-552. doi:10.1164/rccm.202006-2381CP
+    </div>
+  </div>
+</div>
+
+</div><!-- end analysis tab -->
+
+<!-- ==================== HOW TO USE TAB ==================== -->
+<div class="main-tab-panel" id="mainTab_guide">
+
+<div class="card">
+  <h2>What Does This Tool Do?</h2>
+  <div class="guide-intro">
+    <p>When you read a clinical trial (RCT), the results usually say something like <em>"OR 0.85, 95% CI 0.70–1.03, p = 0.09"</em> and conclude the treatment "did not reach statistical significance." But does that really mean the treatment doesn't work?</p>
+    <p>This tool performs a <strong>Bayesian re-analysis</strong> — it takes the trial's numbers and tells you <strong>the actual probability that the treatment is beneficial or harmful</strong>. Instead of a binary yes/no answer, you get something like: <em>"There is an 88% probability that this treatment reduces mortality."</em></p>
+    <p>Supports both <strong>superiority</strong> and <strong>non-inferiority</strong> trial designs.</p>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Step-by-Step Instructions</h2>
+  <div class="guide-steps">
+    <div class="guide-step">
+      <div class="step-number">1</div>
+      <div class="step-content">
+        <h4>Select the study design</h4>
+        <p>Choose <strong>Superiority</strong> (default) if the trial aimed to show the treatment is better than control. Choose <strong>Non-Inferiority</strong> if the trial aimed to show the treatment is "not worse than" the standard of care (see Non-Inferiority section below for details).</p>
+      </div>
+    </div>
+
+    <div class="guide-step">
+      <div class="step-number">2</div>
+      <div class="step-content">
+        <h4>Find the effect size from the paper</h4>
+        <table class="guide-table">
+          <tr><th>What to look for</th><th>Where to find it</th><th>Example</th></tr>
+          <tr><td><strong>Odds Ratio (OR)</strong> + 95% CI</td><td>Results section, binary outcomes</td><td>OR 1.27 (95% CI 0.99–1.63)</td></tr>
+          <tr><td><strong>Risk Ratio (RR)</strong> + 95% CI</td><td>Results section</td><td>RR 0.83 (95% CI 0.68–1.02)</td></tr>
+          <tr><td><strong>Hazard Ratio (HR)</strong> + 95% CI</td><td>Time-to-event outcomes</td><td>HR 1.20 (95% CI 1.01–1.42)</td></tr>
+          <tr><td><strong>Event counts</strong></td><td>Tables: events/total per group</td><td>Tx: 167/501; Ctrl: 142/509</td></tr>
+        </table>
+        <p class="guide-tip">Any one of these is enough. RR and HR are analyzed on their own reported ratio scale; raw 2x2 counts are converted to an odds ratio.</p>
+      </div>
+    </div>
+
+    <div class="guide-step">
+      <div class="step-number">3</div>
+      <div class="step-content">
+        <h4>Enter the numbers, study name, and outcome type</h4>
+        <ul>
+          <li><strong>Bad outcome</strong> = mortality, complications (ratio &lt; 1 = benefit)</li>
+          <li><strong>Good outcome</strong> = survival, recovery (ratio &gt; 1 = benefit)</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="guide-step">
+      <div class="step-number">4</div>
+      <div class="step-content">
+        <h4>Set the expected ratio and prior scenario</h4>
+        <p>The <strong>Expected Ratio</strong> field determines where the optimistic and pessimistic priors are centered. It does <em>not</em> affect the neutral (skeptical) priors, which are always centered at ratio = 1.0.</p>
+        <table class="guide-table">
+          <tr><th>Prior</th><th>Center (Mean)</th><th>Example (Expected OR = 0.75)</th></tr>
+          <tr><td><strong>Neutral</strong></td><td>log(1.0) = 0</td><td>Always 0 — unaffected</td></tr>
+          <tr><td><strong>Optimistic</strong></td><td>log(Expected ratio)</td><td>log(0.75) = −0.288</td></tr>
+          <tr><td><strong>Pessimistic</strong></td><td>−log(Expected ratio)</td><td>+0.288 (mirror of optimistic)</td></tr>
+        </table>
+        <p><strong>Where to find it:</strong> Look in the paper's <em>Methods → Sample Size Calculation</em> section for a sentence like <em>"We powered the study to detect an OR of 0.75"</em> or <em>"assuming a 25% relative risk reduction (RR = 0.75)."</em> Enter that value here.</p>
+        <p class="guide-tip">If you cannot find this value, 0.75 is a reasonable default for most superiority trials. If you only use neutral (skeptical) priors, this field has no effect.</p>
+        <p style="margin-top:8px;">Then select a <strong>Prior Scenario</strong> from the dropdown. Each scenario pre-selects which priors to include and at what strength, based on Table 2 of Zampieri et al.</p>
+        <p class="guide-tip">If unsure about scenario, "Conflicting evidence" (default) is the safest choice.</p>
+      </div>
+    </div>
+
+    <div class="guide-step">
+      <div class="step-number">5</div>
+      <div class="step-content">
+        <h4>Click "Run Bayesian Re-Analysis"</h4>
+        <p>Instant results: summary, tables, density + CDF plots, forest plot, heterogeneity, and text interpretation.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SUPERIORITY vs NON-INFERIORITY -->
+<div class="card">
+  <h2>Superiority vs. Non-Inferiority Trials</h2>
+
+  <div class="grid-2" style="margin-bottom:16px;">
+    <div class="guide-result-item" style="border-left:4px solid var(--primary);">
+      <h4>Superiority Trial</h4>
+      <p><strong>Goal:</strong> Show the new treatment is <em>better</em> than control.</p>
+      <p><strong>Key question:</strong> "What is the probability that the treatment works?"</p>
+      <p><strong>Main output:</strong> P(Benefit), P(Harm), P(Important Benefit), P(Severe Harm)</p>
+      <p><strong>Example:</strong> A new drug vs. placebo for reducing mortality.</p>
+    </div>
+    <div class="guide-result-item" style="border-left:4px solid #0369a1;">
+      <h4>Non-Inferiority (NI) Trial</h4>
+      <p><strong>Goal:</strong> Show the new treatment is <em>not meaningfully worse</em> than the active comparator.</p>
+      <p><strong>Key question:</strong> "What is the probability that the treatment effect is within the acceptable margin?"</p>
+      <p><strong>Main output:</strong> P(Non-Inferiority) — the Bayesian probability that the selected ratio measure stays within the NI margin.</p>
+      <p><strong>Example:</strong> A cheaper/simpler drug vs. the standard drug — is it "close enough"?</p>
+    </div>
+  </div>
+
+  <h3>How Non-Inferiority Analysis Works</h3>
+  <p style="margin-bottom:8px;">In an NI trial, you pre-define a <strong>non-inferiority margin</strong> — the maximum amount by which the new treatment can be worse and still be "acceptable."</p>
+
+  <table class="guide-table">
+    <tr><th>NI Margin Format</th><th>How it works</th><th>Example</th></tr>
+    <tr>
+      <td><strong>Selected ratio scale</strong></td>
+      <td>Directly specify the maximum acceptable ratio on the current measure scale.<br>For bad outcome: NI if ratio &lt; margin.<br>For good outcome: NI if ratio &gt; 1/margin.</td>
+      <td>NI margin = 1.2 means "up to 20% worse is acceptable" on the chosen ratio scale</td>
+    </tr>
+    <tr>
+      <td><strong>Absolute risk difference</strong></td>
+      <td>Specify the maximum absolute difference in event rates. <strong>Requires the control group event rate</strong> and is only available for OR-based analyses.<br>Formula: OR = [p₀+δ] × [1−p₀] / [p₀ × (1−p₀−δ)]</td>
+      <td>NI margin = 5%, control rate = 25% → OR margin ≈ 1.29</td>
+    </tr>
+  </table>
+
+  <div class="info-box" style="border-color:#7dd3fc; background:#e0f2fe; color:#0c4a6e;">
+    <strong>Important:</strong> The tool automatically handles absolute-margin conversion only for OR or 2x2 event-count analyses. For RR or HR studies, enter the NI margin directly on the same reported ratio scale.
+  </div>
+
+  <h3 style="margin-top:16px;">Interpreting NI Results</h3>
+  <ul style="font-size:0.9rem; margin:8px 0 0 20px;">
+    <li><strong>P(NI) &gt; 97.5%</strong> — Strong evidence of non-inferiority (equivalent to one-sided p &lt; 0.025)</li>
+    <li><strong>P(NI) &gt; 95%</strong> — Good evidence of non-inferiority</li>
+    <li><strong>P(NI) 80–95%</strong> — Suggestive but inconclusive</li>
+    <li><strong>P(NI) &lt; 80%</strong> — Cannot conclude non-inferiority</li>
+    <li>Unlike superiority trials, P(NI) should be consistently high across priors. If it drops below 90% with a skeptical prior, the evidence for NI is fragile.</li>
+  </ul>
+</div>
+
+<!-- PRIOR DEFAULTS & SKEPTICAL PRIORS -->
+<div class="card">
+  <h2>Understanding the 9 Priors</h2>
+
+  <p style="margin-bottom:16px;">The Zampieri framework uses <strong>9 priors</strong> organized as a 3×3 grid: 3 beliefs × 3 strengths.</p>
+
+  <h3>The Three Beliefs</h3>
+  <table class="guide-table">
+    <tr><th>Belief</th><th>Center (Mean)</th><th>What it means</th></tr>
+    <tr><td><strong>Neutral (= Skeptical)</strong></td><td>log(ratio) = 0 → ratio = 1.0</td><td>No prior expectation. The <strong>skeptical prior</strong> — treatment probably does nothing until proven otherwise.</td></tr>
+    <tr><td><strong>Optimistic</strong></td><td>log(Expected ratio)</td><td>Prior belief that the treatment works as expected on the selected ratio scale.</td></tr>
+    <tr><td><strong>Pessimistic</strong></td><td>−log(Expected ratio)</td><td>Prior belief that the treatment is harmful (mirror of optimistic).</td></tr>
+  </table>
+
+  <h3 style="margin-top:20px;">The Three Strengths</h3>
+  <table class="guide-table">
+    <tr><th>Strength</th><th>How SD is calculated</th><th>What it means</th></tr>
+    <tr><td><strong>Weak</strong></td><td>P(crossing null) = 30%</td><td>Very uncertain. Data dominate.</td></tr>
+    <tr><td><strong>Moderate</strong></td><td>P(crossing null) = 15%</td><td>Reasonably confident. Moderate influence.</td></tr>
+    <tr><td><strong>Strong</strong></td><td>P(crossing null) = 5%</td><td>Very confident. Strong influence. Only use with strong external evidence.</td></tr>
+  </table>
+
+  <h3 style="margin-top:24px; color:var(--danger);">Which Priors Are "Skeptical"?</h3>
+  <div class="info-box" style="border-color:#bbdefb; background:#e3f2fd; color:#1565c0;">
+    <p><strong>The Neutral priors are the skeptical priors.</strong> Centered at ratio = 1.0 (no effect).</p>
+    <ul style="margin:8px 0 0 16px;">
+      <li><strong>Neutral Strong</strong> = most skeptical. Hard to move away from the null ratio of 1.</li>
+      <li><strong>Neutral Moderate</strong> = moderately skeptical. Open to data.</li>
+      <li><strong>Neutral Weak</strong> = mildly skeptical. Nearly flat.</li>
+    </ul>
+    <p style="margin-top:8px;">If even the <strong>Neutral Strong</strong> prior shows high P(Benefit), the evidence is very convincing.</p>
+  </div>
+
+  <h3 style="margin-top:24px;">Prior Scenario Defaults (Table 2)</h3>
+  <table class="guide-table">
+    <tr><th>Scenario</th><th>Neutral</th><th>Optimistic</th><th>Pessimistic</th></tr>
+    <tr><td>Little to no prior info</td><td>Weak</td><td>Weak</td><td>Weak</td></tr>
+    <tr><td>Conflicting evidence</td><td>Moderate</td><td>Moderate</td><td>Moderate</td></tr>
+    <tr><td>Evidence toward benefit, no outliers</td><td>Moderate</td><td>Moderate</td><td>Weak</td></tr>
+    <tr><td>Evidence toward benefit, with outliers</td><td>Moderate</td><td>Moderate</td><td>Moderate</td></tr>
+    <tr><td>Consecrated beneficial</td><td>Moderate</td><td>Strong</td><td>Weak</td></tr>
+    <tr><td>Low rationale for direct effect</td><td>Strong</td><td>Weak</td><td>Weak</td></tr>
+    <tr><td>Several neutral trials, near futility</td><td>Strong</td><td>Weak</td><td>Weak</td></tr>
+  </table>
+</div>
+
+<!-- CUSTOM PRIOR -->
+<div class="card">
+  <h2>Custom Prior</h2>
+  <p style="margin-bottom:12px;">In addition to the 9 Zampieri priors, you can add your own prior based on external evidence. Open the <strong>"Custom prior"</strong> collapsible section in the Analysis tab.</p>
+
+  <div class="grid-2" style="margin-bottom:16px;">
+    <div class="guide-result-item">
+      <h4>When to use a Custom Prior</h4>
+      <ul>
+        <li>You have a <strong>previous meta-analysis</strong> with a pooled estimate and standard error</li>
+        <li>You want to incorporate a specific <strong>expert opinion</strong> or regulatory assumption</li>
+        <li>The 9 Zampieri grid priors do not reflect the available external evidence</li>
+        <li>You want to test <strong>sensitivity</strong> to a particular prior belief</li>
+      </ul>
+    </div>
+    <div class="guide-result-item">
+      <h4>How to set the values</h4>
+      <table class="guide-table">
+        <tr><th>Field</th><th>What to enter</th></tr>
+        <tr><td><strong>Prior Mean</strong></td><td>The center of your prior on the <em>log-ratio</em> scale.<br>Example: if you believe OR = 0.82 → enter log(0.82) = −0.198</td></tr>
+        <tr><td><strong>Prior SD</strong></td><td>Standard deviation on the log-ratio scale. Smaller SD = stronger prior.<br>Typical range: 0.10 (very strong) – 1.0 (very weak)</td></tr>
+        <tr><td><strong>Prior Name</strong></td><td>A descriptive label (e.g., "Meta-analysis prior")</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="guide-example-box">
+    <p><strong>Example:</strong> A published meta-analysis of 5 RCTs reports a pooled OR = 0.82 with 95% CI 0.68–0.99.</p>
+    <ol>
+      <li>Mean = log(0.82) = <strong>−0.198</strong></li>
+      <li>SE = (log(0.99) − log(0.68)) / (2 × 1.96) = (−0.01 − (−0.386)) / 3.92 = <strong>0.096</strong> → use this as SD</li>
+      <li>Name = "Meta-analysis (5 RCTs)"</li>
+    </ol>
+    <p>This prior will appear as an additional row in the results table and an extra curve in the plots.</p>
+  </div>
+
+  <div class="guide-tip">If you only want to use your custom prior without the Zampieri grid, uncheck all 9 checkboxes and only fill in the custom fields. The Flat (Reference) prior is always included automatically.</div>
+</div>
+
+<!-- THRESHOLDS -->
+<div class="card">
+  <h2>Probability Definitions & Clinical Thresholds</h2>
+
+  <div class="grid-2" style="margin-bottom:16px;">
+    <div class="guide-result-item" style="border-left:4px solid var(--danger);">
+      <h4>Bad Outcome (e.g., mortality)</h4>
+      <table class="guide-table">
+        <tr><td><strong>P(Benefit)</strong></td><td>P(ratio &lt; 1.0)</td></tr>
+        <tr><td><strong>P(Harm)</strong></td><td>P(ratio &gt; 1.0)</td></tr>
+        <tr><td><strong>P(Important Benefit)</strong></td><td>P(ratio &lt; benefit threshold)<br>Default: P(ratio &lt; 0.80)</td></tr>
+        <tr><td><strong>P(Severe Harm)</strong></td><td>P(ratio &gt; harm threshold)<br>Default: P(ratio &gt; 1.25)</td></tr>
+        <tr><td><strong>ROPE</strong></td><td>P(0.91 &lt; ratio &lt; 1.10)</td></tr>
+      </table>
+    </div>
+    <div class="guide-result-item" style="border-left:4px solid var(--success);">
+      <h4>Good Outcome (e.g., survival)</h4>
+      <table class="guide-table">
+        <tr><td><strong>P(Benefit)</strong></td><td>P(ratio &gt; 1.0)</td></tr>
+        <tr><td><strong>P(Harm)</strong></td><td>P(ratio &lt; 1.0)</td></tr>
+        <tr><td><strong>P(Important Benefit)</strong></td><td>P(ratio &gt; 1/benefit threshold)<br>Default: P(ratio &gt; 1.25)</td></tr>
+        <tr><td><strong>P(Severe Harm)</strong></td><td>P(ratio &lt; 1/harm threshold)<br>Default: P(ratio &lt; 0.80)</td></tr>
+        <tr><td><strong>ROPE</strong></td><td>P(0.91 &lt; ratio &lt; 1.10)</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <strong>Default thresholds:</strong> Severe Harm = ratio 1.25, Important Benefit = ratio 0.80. ROPE = 0.91–1.10. These are independently adjustable in the Analysis tab.
+  </div>
+</div>
+
+<!-- UNDERSTANDING RESULTS -->
+<div class="card">
+  <h2>Understanding the Results</h2>
+  <div class="guide-results">
+    <div class="guide-result-item">
+      <h4>Summary Boxes</h4>
+      <ul>
+        <li><strong>Observed ratio</strong> — Effect size from the study on the current scale</li>
+        <li><strong>P(Benefit) / P(NI)</strong> — Key probability (superiority or non-inferiority)</li>
+        <li><strong>P(Severe Harm)</strong> — Clinically important harm</li>
+        <li><strong>I² (Prior Sensitivity)</strong> — Robustness to prior choice</li>
+      </ul>
+    </div>
+    <div class="guide-result-item">
+      <h4>Graphs</h4>
+      <ul>
+        <li><strong>Posterior Density</strong> — Bell curve: green = benefit, red = harm</li>
+        <li><strong>Cumulative Probability (CDF)</strong> — Read off P(Benefit), P(NI), etc. at any threshold</li>
+        <li><strong>Forest Plot</strong> — All priors side by side</li>
+        <li><strong>Heterogeneity Plot</strong> — Sensitivity to prior choice</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- EXAMPLE -->
+<div class="card">
+  <h2>Quick Example: ART Trial</h2>
+  <div class="guide-example-box">
+    <p>ART trial (2017): OR 1.27 (95% CI 0.99–1.63, p = 0.057) for 28-day mortality — "not statistically significant."</p>
+    <p><strong>Bayesian result:</strong> &gt;93% probability of harm despite p = 0.057. Much more useful than "not significant."</p>
+    <div class="btn-center" style="margin:12px 0 0 0;">
+      <button class="btn btn-primary" onclick="loadARTExample(); switchMainTab('analysis');" style="padding:8px 20px;font-size:0.9rem;">Load ART Trial Example & Run</button>
+    </div>
+  </div>
+</div>
+
+<!-- GLOSSARY -->
+<div class="card">
+  <h2>Glossary</h2>
+  <table class="guide-table">
+    <tr><th>Term</th><th>Plain English</th></tr>
+    <tr><td><strong>Prior</strong></td><td>Starting belief about the treatment before this trial</td></tr>
+    <tr><td><strong>Posterior</strong></td><td>Updated belief after combining prior with trial data</td></tr>
+    <tr><td><strong>Neutral/Skeptical</strong></td><td>"Treatment probably does nothing" — centered at ratio = 1</td></tr>
+    <tr><td><strong>Ratio Measure</strong></td><td>OR, RR, or HR. A value of 1 means no effect; values below or above 1 favor one arm depending on whether the outcome is bad or good.</td></tr>
+    <tr><td><strong>95% CrI</strong></td><td>95% probability the true value is in this range</td></tr>
+    <tr><td><strong>ROPE</strong></td><td>Region of Practical Equivalence — effects too small to matter</td></tr>
+    <tr><td><strong>NI Margin</strong></td><td>Maximum acceptable inferiority in a non-inferiority trial</td></tr>
+    <tr><td><strong>P(NI)</strong></td><td>Bayesian probability that the treatment is non-inferior</td></tr>
+    <tr><td><strong>I²</strong></td><td>How much results change with different prior assumptions</td></tr>
+  </table>
+</div>
+
+</div><!-- end guide tab -->
+
+</div><!-- end container -->
+
+<div id="loading"><div class="spinner"></div></div>
+
+<script>
+// ==========================================
+// MAIN TAB NAVIGATION
+// ==========================================
+
+function switchMainTab(tabName) {
+  document.querySelectorAll('.main-tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.main-tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('mainTab_'+tabName).classList.add('active');
+  const btns = document.querySelectorAll('.main-tab-btn');
+  if(tabName === 'analysis') btns[0].classList.add('active');
+  else btns[1].classList.add('active');
+}
+
+// ==========================================
+// STATISTICAL FUNCTIONS
+// ==========================================
+
+function erf(x) {
+  const a1=0.254829592, a2=-0.284496736, a3=1.421413741, a4=-1.453152027, a5=1.061405429, p=0.3275911;
+  const sign = x<0 ? -1 : 1;
+  x = Math.abs(x);
+  const t = 1.0/(1.0+p*x);
+  const y = 1.0-(((((a5*t+a4)*t)+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+  return sign*y;
+}
+
+function normalCDF(x, mean=0, sd=1) {
+  return 0.5*(1+erf((x-mean)/(sd*Math.SQRT2)));
+}
+
+function normalPDF(x, mean=0, sd=1) {
+  return Math.exp(-0.5*Math.pow((x-mean)/sd,2))/(sd*Math.sqrt(2*Math.PI));
+}
+
+function normalQuantile(p, mean=0, sd=1) {
+  if(p<=0) return -Infinity;
+  if(p>=1) return Infinity;
+  const a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+  const b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+  const c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+  const d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];
+  const pLow=0.02425, pHigh=1-pLow;
+  let q,r;
+  if(p<pLow){q=Math.sqrt(-2*Math.log(p));r=(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  else if(p<=pHigh){q=p-0.5;r=q*q;r=(((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);}
+  else{q=Math.sqrt(-2*Math.log(1-p));r=-(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);}
+  return mean+sd*r;
+}
+
+// ==========================================
+// BAYESIAN CONJUGATE NORMAL UPDATE
+// ==========================================
+
+function conjugateNormalUpdate(priorMean, priorSD, dataMean, dataSE) {
+  const priorPrec = 1/(priorSD*priorSD);
+  const dataPrec = 1/(dataSE*dataSE);
+  const postPrec = priorPrec + dataPrec;
+  const postVar = 1/postPrec;
+  const postSD = Math.sqrt(postVar);
+  const postMean = postVar*(priorMean*priorPrec + dataMean*dataPrec);
+  return {mean:postMean, sd:postSD};
+}
+
+// ==========================================
+// PRIOR CONSTRUCTION (Zampieri Framework)
+// ==========================================
+
+function computePriorSD(priorMean, tailProb) {
+  if(Math.abs(priorMean) < 0.001) return 0.355;
+  const z = Math.abs(normalQuantile(tailProb));
+  return Math.abs(priorMean) / z;
+}
+
+function buildPriors(expectedOR, outcomeIsBad) {
+  let logExpected = Math.log(expectedOR);
+  let optMean = logExpected;
+  let pessMean = -logExpected;
+
+  return {
+    'Neutral Weak':     {mean:0, sd:5, belief:'Neutral', strength:'Weak'},
+    'Neutral Moderate':  {mean:0, sd:0.355, belief:'Neutral', strength:'Moderate'},
+    'Neutral Strong':    {mean:0, sd:0.205, belief:'Neutral', strength:'Strong'},
+    'Optimistic Weak':   {mean:optMean, sd:computePriorSD(optMean, 0.30), belief:'Optimistic', strength:'Weak'},
+    'Optimistic Moderate':{mean:optMean, sd:computePriorSD(optMean, 0.15), belief:'Optimistic', strength:'Moderate'},
+    'Optimistic Strong': {mean:optMean, sd:computePriorSD(optMean, 0.05), belief:'Optimistic', strength:'Strong'},
+    'Pessimistic Weak':  {mean:pessMean, sd:computePriorSD(pessMean, 0.30), belief:'Pessimistic', strength:'Weak'},
+    'Pessimistic Moderate':{mean:pessMean, sd:computePriorSD(pessMean, 0.15), belief:'Pessimistic', strength:'Moderate'},
+    'Pessimistic Strong':{mean:pessMean, sd:computePriorSD(pessMean, 0.05), belief:'Pessimistic', strength:'Strong'},
+  };
+}
+
+// ==========================================
+// INPUT HANDLING & NI LOGIC
+// ==========================================
+
+function getCurrentInputType() {
+  return document.querySelector('input[name="inputType"]:checked').value;
+}
+
+function getMeasureMeta(inputType = getCurrentInputType()) {
+  if(inputType === 'rr') {
+    return {
+      inputType,
+      short: 'RR',
+      full: 'Risk Ratio',
+      expectedLabel: 'Expected Risk Ratio for Trial Design',
+      ratioLabel: 'Risk Ratio',
+      logLabel: 'log(RR)',
+      thresholdUnit: 'RR',
+      supportsAbsoluteNI: false
+    };
+  }
+  if(inputType === 'hr') {
+    return {
+      inputType,
+      short: 'HR',
+      full: 'Hazard Ratio',
+      expectedLabel: 'Expected Hazard Ratio for Trial Design',
+      ratioLabel: 'Hazard Ratio',
+      logLabel: 'log(HR)',
+      thresholdUnit: 'HR',
+      supportsAbsoluteNI: false
+    };
+  }
+  return {
+    inputType,
+    short: 'OR',
+    full: 'Odds Ratio',
+    expectedLabel: 'Expected Odds Ratio for Trial Design',
+    ratioLabel: 'Odds Ratio',
+    logLabel: 'log(OR)',
+    thresholdUnit: 'OR',
+    supportsAbsoluteNI: true
+  };
+}
+
+function setAnalysisMessage(type, html) {
+  const el = document.getElementById('analysisMessage');
+  if(!html) {
+    el.classList.add('hidden');
+    el.innerHTML = '';
+    return;
+  }
+  el.className = `notice notice-${type}`;
+  el.innerHTML = html;
+}
+
+function updateMeasureUI() {
+  const inputType = getCurrentInputType();
+  const meta = getMeasureMeta(inputType);
+  const isEvents = inputType === 'events';
+  const isLogOR = inputType === 'logor';
+  setAnalysisMessage('', '');
+
+  document.getElementById('ratioInput').classList.toggle('hidden', isEvents || isLogOR);
+  document.getElementById('eventsInput').classList.toggle('hidden', !isEvents);
+  document.getElementById('logORInput').classList.toggle('hidden', !isLogOR);
+
+  document.getElementById('ratioLabel').textContent = meta.ratioLabel;
+  document.getElementById('expectedRatioLabel').textContent = meta.expectedLabel;
+  document.getElementById('customMeanLabel').textContent = `Custom Prior Mean (${meta.logLabel})`;
+  document.getElementById('expectedRatioNote').textContent = isEvents
+    ? 'For 2x2 tables, the app derives an odds ratio from the contingency table and centers priors on the OR scale.'
+    : `Used to center optimistic and pessimistic priors on the ${meta.short} scale.`;
+  document.getElementById('measureModeNote').textContent = isEvents
+    ? '2x2 table mode derives an odds ratio. If any cell is zero, the app adds 0.5 to all four cells before estimating log(OR) and its standard error.'
+    : inputType === 'logor'
+      ? 'This mode expects log(OR) and its standard error directly.'
+      : `${meta.short} mode keeps the Bayesian update on the reported log-${meta.short.toLowerCase()} scale instead of silently relabeling it as OR.`;
+
+  document.getElementById('severeHarmLabel').textContent = `Severe Harm Threshold (${meta.thresholdUnit})`;
+  document.getElementById('importantBenefitLabel').textContent = `Important Benefit Threshold (${meta.thresholdUnit})`;
+  document.getElementById('ropeLowerLabel').textContent = `ROPE Lower Bound (${meta.thresholdUnit})`;
+  document.getElementById('ropeUpperLabel').textContent = `ROPE Upper Bound (${meta.thresholdUnit})`;
+  document.getElementById('resultsMeasurePill').textContent = `Measure: ${meta.short}`;
+
+  const niSupport = document.getElementById('niFormatSupportNote');
+  niSupport.textContent = meta.supportsAbsoluteNI
+    ? 'Absolute risk-difference conversion is available for OR-based analyses and 2x2 event-count inputs.'
+    : `Absolute risk-difference conversion is not available on the ${meta.short} scale. Use a ${meta.short} NI margin instead.`;
+
+  toggleNIFormat();
+  updateThresholdLabels();
+}
+
+const inputTypeRadios = document.querySelectorAll('input[name="inputType"]');
+inputTypeRadios.forEach(r => r.addEventListener('change', updateMeasureUI));
+
+// Study design toggle
+document.querySelectorAll('input[name="studyDesign"]').forEach(r => r.addEventListener('change', function() {
+  document.getElementById('niSettings').classList.toggle('hidden', this.value !== 'noninferiority');
+  toggleNIFormat();
+  if(this.value === 'noninferiority') {
+    document.getElementById('cb_nw').checked = true;
+    document.getElementById('cb_nm').checked = true;
+    document.getElementById('cb_ns').checked = false;
+    document.getElementById('cb_ow').checked = false;
+    document.getElementById('cb_om').checked = false;
+    document.getElementById('cb_os').checked = false;
+    document.getElementById('cb_pw').checked = false;
+    document.getElementById('cb_pm').checked = false;
+    document.getElementById('cb_ps').checked = false;
+    document.getElementById('priorScenario').value = 'custom';
+  } else {
+    updatePriorScenario();
+  }
+}));
+
+function toggleNIFormat() {
+  const fmt = document.getElementById('niFormat').value;
+  const meta = getMeasureMeta();
+  const absoluteMode = fmt === 'absolute';
+  document.getElementById('niBaselineGroup').classList.toggle('hidden', !absoluteMode);
+  document.getElementById('niMarginLabel').textContent = absoluteMode ? 'NI Margin (Absolute Risk Difference)' : `NI Margin (${meta.short})`;
+  document.getElementById('niMarginDesc').textContent = absoluteMode
+    ? 'Maximum acceptable absolute difference in event rate (e.g. 0.05 = 5%). Converted internally to OR.'
+    : `Treatment is non-inferior if the posterior ${meta.short} remains within this threshold.`;
+  if(absoluteMode) {
+    document.getElementById('niMargin').placeholder = 'e.g. 0.05';
+    if(document.getElementById('niMargin').value === '1.2') document.getElementById('niMargin').value = '0.05';
+  } else {
+    document.getElementById('niMargin').placeholder = 'e.g. 1.2';
+    if(document.getElementById('niMargin').value === '0.05') document.getElementById('niMargin').value = '1.2';
+  }
+  document.getElementById('niConvertedInfo').classList.add('hidden');
+}
+
+function getNIMarginValue() {
+  const isNI = document.getElementById('designNI').checked;
+  if(!isNI) return null;
+
+  const fmt = document.getElementById('niFormat').value;
+  const inputType = getCurrentInputType();
+  const meta = getMeasureMeta(inputType);
+  let niMarginValue;
+
+  if(fmt === 'ratio') {
+    niMarginValue = parseFloat(document.getElementById('niMargin').value);
+    if(isNaN(niMarginValue) || niMarginValue <= 0) {
+      alert(`Please enter a valid NI margin on the ${meta.short} scale.`);
+      return null;
+    }
+  } else {
+    if(!meta.supportsAbsoluteNI) {
+      alert(`Absolute risk-difference NI conversion is only supported for OR-based analyses. Switch to an OR/2x2 input or enter the NI margin directly on the ${meta.short} scale.`);
+      return null;
+    }
+
+    const delta = parseFloat(document.getElementById('niMargin').value);
+    let p0;
+
+    if(inputType === 'events') {
+      const c = parseInt(document.getElementById('eventsCtrl').value);
+      const n2 = parseInt(document.getElementById('totalCtrl').value);
+      if(!isNaN(c) && !isNaN(n2) && n2 > 0) {
+        p0 = c / n2;
+        document.getElementById('niBaseline').value = (p0 * 100).toFixed(1);
+      }
+    }
+
+    if(p0 === undefined) {
+      const baselinePct = parseFloat(document.getElementById('niBaseline').value);
+      if(isNaN(baselinePct) || baselinePct <= 0 || baselinePct >= 100) {
+        alert('Please enter the control group event rate (%) to convert the absolute NI margin to OR scale.');
+        return null;
+      }
+      p0 = baselinePct / 100;
+    }
+
+    if(isNaN(delta) || delta <= 0 || delta >= 1) {
+      alert('Please enter a valid absolute NI margin (e.g. 0.05 for 5%).');
+      return null;
+    }
+
+    const p1 = p0 + delta;
+    if(p1 >= 1) {
+      alert('Control rate + NI margin exceeds 100%. Check your values.');
+      return null;
+    }
+
+    niMarginValue = (p1 / (1 - p1)) / (p0 / (1 - p0));
+
+    const infoDiv = document.getElementById('niConvertedInfo');
+    infoDiv.className = 'notice notice-info';
+    infoDiv.classList.remove('hidden');
+    infoDiv.innerHTML = `Converted absolute margin ${delta} with control rate ${(p0*100).toFixed(1)}% to an <strong>OR margin of ${niMarginValue.toFixed(3)}</strong>.`;
+  }
+  return niMarginValue;
+}
+
+function toggleCollapse(id) {
+  const el = document.getElementById(id);
+  el.classList.toggle('open');
+  const arrow = document.getElementById(id+'Arrow');
+  arrow.textContent = el.classList.contains('open') ? '\u25B2' : '\u25BC';
+}
+
+function updatePriorScenario() {
+  const s = document.getElementById('priorScenario').value;
+  const map = {
+    'little_info':       {nw:1,nm:0,ns:0,ow:1,om:0,os:0,pw:1,pm:0,ps:0},
+    'conflicting':       {nw:0,nm:1,ns:0,ow:0,om:1,os:0,pw:0,pm:1,ps:0},
+    'benefit_no_outlier':{nw:0,nm:1,ns:0,ow:0,om:1,os:0,pw:1,pm:0,ps:0},
+    'benefit_outlier':   {nw:0,nm:1,ns:0,ow:0,om:1,os:0,pw:0,pm:1,ps:0},
+    'consecrated':       {nw:0,nm:1,ns:0,ow:0,om:0,os:1,pw:1,pm:0,ps:0},
+    'low_rationale':     {nw:0,nm:0,ns:1,ow:1,om:0,os:0,pw:1,pm:0,ps:0},
+    'many_neutral':      {nw:0,nm:0,ns:1,ow:1,om:0,os:0,pw:1,pm:0,ps:0},
+  };
+  if(s==='custom') return;
+  const m = map[s];
+  document.getElementById('cb_nw').checked=!!m.nw; document.getElementById('cb_nm').checked=!!m.nm;
+  document.getElementById('cb_ns').checked=!!m.ns; document.getElementById('cb_ow').checked=!!m.ow;
+  document.getElementById('cb_om').checked=!!m.om; document.getElementById('cb_os').checked=!!m.os;
+  document.getElementById('cb_pw').checked=!!m.pw; document.getElementById('cb_pm').checked=!!m.pm;
+  document.getElementById('cb_ps').checked=!!m.ps;
+}
+
+function getInputData() {
+  const inputType = getCurrentInputType();
+  const measure = getMeasureMeta(inputType);
+  let logEffect, se, observedRatio, continuityCorrection = false;
+  let correctionSummary = null;
+
+  if(inputType==='or' || inputType==='rr' || inputType==='hr') {
+    const es = parseFloat(document.getElementById('effectSize').value);
+    const cl = parseFloat(document.getElementById('ciLower').value);
+    const cu = parseFloat(document.getElementById('ciUpper').value);
+    if(isNaN(es)||isNaN(cl)||isNaN(cu)||es<=0||cl<=0||cu<=0||cl>=cu) return null;
+    logEffect = Math.log(es);
+    se = (Math.log(cu)-Math.log(cl))/(2*1.96);
+    observedRatio = es;
+    if(!isFinite(se) || se <= 0) return null;
+  } else if(inputType==='events') {
+    const a=parseInt(document.getElementById('eventsTx').value), n1=parseInt(document.getElementById('totalTx').value);
+    const c=parseInt(document.getElementById('eventsCtrl').value), n2=parseInt(document.getElementById('totalCtrl').value);
+    if(isNaN(a)||isNaN(n1)||isNaN(c)||isNaN(n2)) return null;
+    if(n1 <= 0 || n2 <= 0 || a < 0 || c < 0 || a > n1 || c > n2) return null;
+    const b=n1-a, d=n2-c;
+    let aa = a, bb = b, cc = c, dd = d;
+    if(aa === 0 || bb === 0 || cc === 0 || dd === 0) {
+      continuityCorrection = true;
+      aa += 0.5; bb += 0.5; cc += 0.5; dd += 0.5;
+      correctionSummary = {a:aa, b:bb, c:cc, d:dd};
+    }
+    if(aa <= 0 || bb <= 0 || cc <= 0 || dd <= 0) return null;
+    logEffect = Math.log((aa*dd)/(bb*cc));
+    se = Math.sqrt(1/aa+1/bb+1/cc+1/dd);
+    observedRatio = Math.exp(logEffect);
+  } else {
+    logEffect = parseFloat(document.getElementById('logOR').value);
+    se = parseFloat(document.getElementById('se').value);
+    if(isNaN(logEffect)||isNaN(se)||se<=0) return null;
+    observedRatio = Math.exp(logEffect);
+  }
+  return {logEffect, se, inputType, measure, observedRatio, continuityCorrection, correctionSummary};
+}
+
+function getScenarioLabel() {
+  const sel = document.getElementById('priorScenario');
+  return sel.options[sel.selectedIndex].text;
+}
+
+// ==========================================
+// MAIN ANALYSIS
+// ==========================================
+
+function runAnalysis() {
+  const data = getInputData();
+  if(!data) { alert('Please enter valid study data.'); return; }
+
+  const measure = data.measure;
+  const outcomeIsBad = document.getElementById('outcomeType').value === 'bad';
+  const expectedOR = parseFloat(document.getElementById('expectedOR').value) || 0.75;
+  const ropeLower = parseFloat(document.getElementById('ropeLower').value) || 0.91;
+  const ropeUpper = parseFloat(document.getElementById('ropeUpper').value) || 1.1;
+  const severeHarmOR = parseFloat(document.getElementById('severeHarmOR').value) || 1.25;
+  const importantBenefitOR = parseFloat(document.getElementById('importantBenefitOR').value) || 0.80;
+  const studyName = document.getElementById('studyName').value || 'Study';
+  const scenarioLabel = getScenarioLabel();
+
+  // Non-inferiority
+  const isNI = document.getElementById('designNI').checked;
+  let niMarginOR = null;
+  if(isNI) {
+    niMarginOR = getNIMarginValue();
+    if(niMarginOR === null) return;
+  }
+
+  const allPriors = buildPriors(expectedOR, outcomeIsBad);
+  const cbMap = {
+    'Neutral Weak':'cb_nw','Neutral Moderate':'cb_nm','Neutral Strong':'cb_ns',
+    'Optimistic Weak':'cb_ow','Optimistic Moderate':'cb_om','Optimistic Strong':'cb_os',
+    'Pessimistic Weak':'cb_pw','Pessimistic Moderate':'cb_pm','Pessimistic Strong':'cb_ps'
+  };
+
+  const selectedPriors = {};
+  for(const [name,cbId] of Object.entries(cbMap)) {
+    if(document.getElementById(cbId).checked) selectedPriors[name] = allPriors[name];
+  }
+
+  const customMean = parseFloat(document.getElementById('customMean').value);
+  const customSD = parseFloat(document.getElementById('customSD').value);
+  const customName = document.getElementById('customName').value || 'Custom Prior';
+  if(!isNaN(customMean) && !isNaN(customSD) && customSD > 0) {
+    selectedPriors[customName] = {mean:customMean, sd:customSD, belief:'Custom', strength:'Custom'};
+  }
+  selectedPriors['Flat (Reference)'] = {mean:0, sd:1000, belief:'Flat', strength:'—'};
+
+  if(Object.keys(selectedPriors).length < 2) { alert('Please select at least 2 priors.'); return; }
+
+  const results = [];
+  for(const [name, prior] of Object.entries(selectedPriors)) {
+    const post = conjugateNormalUpdate(prior.mean, prior.sd, data.logEffect, data.se);
+    const postOR = Math.exp(post.mean);
+    const crI_lower = Math.exp(normalQuantile(0.025, post.mean, post.sd));
+    const crI_upper = Math.exp(normalQuantile(0.975, post.mean, post.sd));
+
+    let pBenefit, pHarm, pSevereHarm, pImportantBenefit;
+    if(outcomeIsBad) {
+      pBenefit = normalCDF(0, post.mean, post.sd);
+      pHarm = 1 - pBenefit;
+      pSevereHarm = 1 - normalCDF(Math.log(severeHarmOR), post.mean, post.sd);
+      pImportantBenefit = normalCDF(Math.log(importantBenefitOR), post.mean, post.sd);
+    } else {
+      pBenefit = 1 - normalCDF(0, post.mean, post.sd);
+      pHarm = normalCDF(0, post.mean, post.sd);
+      pSevereHarm = normalCDF(Math.log(1/severeHarmOR), post.mean, post.sd);
+      pImportantBenefit = 1 - normalCDF(Math.log(1/importantBenefitOR), post.mean, post.sd);
+    }
+
+    const rope = normalCDF(Math.log(ropeUpper), post.mean, post.sd) - normalCDF(Math.log(ropeLower), post.mean, post.sd);
+
+    // P(Non-inferiority)
+    let pNI = null;
+    if(isNI && niMarginOR) {
+      if(outcomeIsBad) {
+        pNI = normalCDF(Math.log(niMarginOR), post.mean, post.sd);
+      } else {
+        pNI = 1 - normalCDF(Math.log(1/niMarginOR), post.mean, post.sd);
+      }
+    }
+
+    results.push({
+      name, prior, post, postOR, crI_lower, crI_upper,
+      pBenefit, pHarm, pSevereHarm, pImportantBenefit, rope, pNI
+    });
+  }
+
+  const nonFlatResults = results.filter(r => r.name !== 'Flat (Reference)');
+  const het = computeHeterogeneity(nonFlatResults);
+
+  const rs = document.getElementById('resultsSection');
+  rs.style.display = 'block';
+
+  const notices = [];
+  if(data.inputType === 'rr' || data.inputType === 'hr') {
+    notices.push(`This run used the <strong>${measure.short}</strong> scale directly. Priors, thresholds, and posterior probabilities were computed on the reported log-${measure.short.toLowerCase()} scale rather than silently relabeling the result as an odds ratio.`);
+  }
+  if(data.continuityCorrection && data.correctionSummary) {
+    notices.push(`A <strong>0.5 continuity correction</strong> was applied to all four 2x2 cells because at least one event cell was zero. Corrected cells: a=${data.correctionSummary.a}, b=${data.correctionSummary.b}, c=${data.correctionSummary.c}, d=${data.correctionSummary.d}.`);
+  }
+  setAnalysisMessage(notices.length ? (data.continuityCorrection ? 'info' : 'warning') : '', notices.join('<br><br>'));
+
+  const cfg = {measure, outcomeIsBad, ropeLower, ropeUpper, severeHarmOR, importantBenefitOR, scenarioLabel, isNI, niMarginOR};
+  displayResults(results, data, het, studyName, cfg);
+
+  setTimeout(() => rs.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+}
+
+// ==========================================
+// HETEROGENEITY (Bayesian, DuMouchel prior)
+// ==========================================
+
+function computeHeterogeneity(results) {
+  if(results.length < 2) return {I2:0, Q:0, tau2:0, medianTau:0, I2atMedian:0, tauPosterior:[], muPooled:0, muPooledCrI:[0,0], s0:0};
+  const k = results.length;
+  const thetas = results.map(r => r.post.mean);
+  const sigmas = results.map(r => r.post.sd);
+
+  const sumInvVar = sigmas.reduce((s,sig) => s + 1/(sig*sig), 0);
+  const vTypical = k / sumInvVar;
+
+  function I2func(tau) { return (tau*tau) / (tau*tau + vTypical); }
+
+  const s0 = k / sigmas.reduce((s,sig) => s + 1/sig, 0);
+
+  function logTauPosterior(tau) {
+    const vars = sigmas.map(sig => sig*sig + tau*tau);
+    const ws = vars.map(v => 1/v);
+    const sumWs = ws.reduce((a,b) => a+b, 0);
+    const wMean = thetas.reduce((s,t,i) => s + ws[i]*t, 0) / sumWs;
+    const Qstar = thetas.reduce((s,t,i) => s + ws[i]*(t-wMean)*(t-wMean), 0);
+    let logLik = 0;
+    for(let i=0; i<k; i++) logLik -= 0.5 * Math.log(vars[i]);
+    logLik -= 0.5 * Math.log(sumWs);
+    logLik -= 0.5 * Qstar;
+    return logLik + Math.log(s0) - 2*Math.log(s0 + tau);
+  }
+
+  const tauGrid = [], logPostGrid = [], nGrid = 2000, tauMax = 0.5;
+  for(let i=0; i<=nGrid; i++) { const tau = (i/nGrid)*tauMax; tauGrid.push(tau); logPostGrid.push(logTauPosterior(tau)); }
+  const maxLog = Math.max(...logPostGrid);
+  const postGrid = logPostGrid.map(lp => Math.exp(lp - maxLog));
+  const postSum = postGrid.reduce((a,b) => a+b, 0);
+  const postNorm = postGrid.map(p => p/postSum);
+
+  let cumSum = 0, medianTau = 0;
+  for(let i=0; i<=nGrid; i++) { cumSum += postNorm[i]; if(cumSum >= 0.5) { medianTau = tauGrid[i]; break; } }
+
+  const I2atMedian = I2func(medianTau);
+  const weights = sigmas.map(s => 1/(s*s));
+  const sumW = weights.reduce((a,b) => a+b, 0);
+  const weightedMean = thetas.reduce((s,t,i) => s+weights[i]*t, 0) / sumW;
+  const Q = thetas.reduce((s,t,i) => s+weights[i]*Math.pow(t-weightedMean,2), 0);
+  const pooledVars = sigmas.map(s => s*s + medianTau*medianTau);
+  const pooledW = pooledVars.map(v => 1/v);
+  const pooledSumW = pooledW.reduce((a,b) => a+b, 0);
+  const muPooled = thetas.reduce((s,t,i) => s+pooledW[i]*t, 0) / pooledSumW;
+  const muPooledSE = Math.sqrt(1/pooledSumW);
+  const muPooledCrI = [muPooled - 1.96*muPooledSE, muPooled + 1.96*muPooledSE];
+
+  return { I2: I2atMedian, Q, tau2: medianTau*medianTau, medianTau, I2atMedian, I2func, vTypical,
+    tauGrid, postNorm, s0, weightedMean, df: k-1, k, muPooled, muPooledSE, muPooledCrI };
+}
+
+// ==========================================
+// DISPLAY RESULTS
+// ==========================================
+
+function displayResults(results, data, het, studyName, cfg) {
+  const {measure, outcomeIsBad, ropeLower, ropeUpper, severeHarmOR, importantBenefitOR, scenarioLabel, isNI, niMarginOR} = cfg;
+  const flatResult = results.find(r=>r.name==='Flat (Reference)');
+
+  document.getElementById('resultsTitle').textContent = `Results — ${studyName || 'Study'}`;
+  let subtitleHTML = `Prior scenario: <strong>${scenarioLabel}</strong> | Outcome: <strong>${outcomeIsBad ? `Bad (${measure.short} < 1 = benefit)` : `Good (${measure.short} > 1 = benefit)`}</strong>`;
+  subtitleHTML += ` | Harm: <strong>${measure.short} ${outcomeIsBad?'>':'<'} ${outcomeIsBad?severeHarmOR:(1/severeHarmOR).toFixed(2)}</strong> | Benefit: <strong>${measure.short} ${outcomeIsBad?'<':'>'} ${outcomeIsBad?importantBenefitOR:(1/importantBenefitOR).toFixed(2)}</strong>`;
+  if(isNI) subtitleHTML += ` | <strong style="color:#0369a1;">NI margin: ${measure.short} ${niMarginOR.toFixed(3)}</strong>`;
+  document.getElementById('resultsSubtitle').innerHTML = subtitleHTML;
+  document.getElementById('resultsMeasurePill').textContent = `Measure: ${measure.short}`;
+
+  // Summary boxes
+  const boxesDiv = document.getElementById('summaryBoxes');
+  let boxesHTML = `
+    <div class="stat-box"><div class="value">${data.observedRatio.toFixed(2)}</div><div class="label">Observed ${measure.short}</div></div>`;
+  if(isNI && flatResult.pNI !== null) {
+    boxesHTML += `<div class="stat-box" style="background:#e0f2fe;"><div class="value" style="color:#0369a1;">${(flatResult.pNI*100).toFixed(1)}%</div><div class="label">P(NI) — Flat</div></div>`;
+    boxesHTML += `<div class="stat-box" style="background:#f0fdf4;"><div class="value" style="color:#15803d;">${(flatResult.pBenefit*100).toFixed(1)}%</div><div class="label">P(Superiority) — Flat</div></div>`;
+  } else {
+    boxesHTML += `<div class="stat-box"><div class="value">${(flatResult.pBenefit*100).toFixed(1)}%</div><div class="label">P(Benefit) — Flat</div></div>`;
+  }
+  boxesHTML += `
+    <div class="stat-box"><div class="value">${(flatResult.pSevereHarm*100).toFixed(1)}%</div><div class="label">P(Severe Harm)</div></div>
+    <div class="stat-box"><div class="value">${(het.I2atMedian*100).toFixed(1)}%</div><div class="label">I² (Prior Sensitivity)</div></div>`;
+  boxesDiv.innerHTML = boxesHTML;
+
+  // Table header
+  const thead = document.getElementById('resultsHead');
+  let headHTML;
+  if(isNI) {
+    headHTML = `<tr><th>Prior N(μ, σ)</th><th>Posterior ${measure.short} (95% CrI)</th><th>P(NI)</th><th>P(Superiority)</th><th>P(Severe Harm)</th><th>ROPE</th></tr>`;
+  } else {
+    headHTML = `<tr><th>Prior N(μ, σ)</th><th>Posterior ${measure.short} (95% CrI)</th><th>P(Benefit)</th><th>P(Harm)</th><th>P(Imp. Benefit)</th><th>P(Severe Harm)</th><th>ROPE</th></tr>`;
+  }
+  thead.innerHTML = headHTML;
+
+  // Table body
+  const tbody = document.getElementById('resultsBody');
+  tbody.innerHTML = '';
+  for(const r of results) {
+    const row = document.createElement('tr');
+    const priorCell = `<td style="text-align:left;font-weight:600;font-size:0.82rem;">${r.name}<br><span style="font-weight:400;color:var(--text-light);">N(${r.prior.mean.toFixed(2)}, ${r.prior.sd>=100?'flat':r.prior.sd.toFixed(3)})</span></td>`;
+    const postCell = `<td><strong>${r.postOR.toFixed(2)}</strong><br><span style="font-size:0.78rem;color:var(--text-light);">(${r.crI_lower.toFixed(2)} – ${r.crI_upper.toFixed(2)})</span></td>`;
+    let rowHTML;
+    if(isNI && r.pNI !== null) {
+      rowHTML = priorCell + postCell +
+        `<td><span class="${r.pNI>0.95?'tag tag-ni':(r.pNI>0.80?'tag tag-neutral':'tag tag-harm')}">${(r.pNI*100).toFixed(1)}%</span></td>` +
+        `<td><span class="${r.pBenefit>0.5?'tag tag-benefit':'tag tag-neutral'}">${(r.pBenefit*100).toFixed(1)}%</span></td>` +
+        `<td><span class="${r.pSevereHarm>0.3?'tag tag-harm':'tag tag-neutral'}">${(r.pSevereHarm*100).toFixed(1)}%</span></td>` +
+        `<td>${(r.rope*100).toFixed(1)}%</td>`;
+    } else {
+      rowHTML = priorCell + postCell +
+        `<td><span class="${r.pBenefit>0.5?'tag tag-benefit':'tag tag-neutral'}">${(r.pBenefit*100).toFixed(1)}%</span></td>` +
+        `<td><span class="${r.pHarm>0.5?'tag tag-harm':'tag tag-neutral'}">${(r.pHarm*100).toFixed(1)}%</span></td>` +
+        `<td>${(r.pImportantBenefit*100).toFixed(1)}%</td>` +
+        `<td><span class="${r.pSevereHarm>0.3?'tag tag-harm':'tag tag-neutral'}">${(r.pSevereHarm*100).toFixed(1)}%</span></td>` +
+        `<td>${(r.rope*100).toFixed(1)}%</td>`;
+    }
+    row.innerHTML = rowHTML;
+    tbody.appendChild(row);
+  }
+
+  createInterpretation(results, data, het, studyName, cfg);
+
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      try { createPosteriorPlots(results, data, cfg); } catch(e) { console.error('Posterior plots error:', e); }
+      try { createForestPlot(results, cfg, het); } catch(e) { console.error('Forest plot error:', e); }
+      try { createHetDisplay(het, results, measure); } catch(e) { console.error('Het display error:', e); }
+    }, 50);
+  });
+}
+
+// ==========================================
+// PLOTTING
+// ==========================================
+
+function createPosteriorPlots(results, data, cfg) {
+  const {measure, outcomeIsBad, ropeLower, ropeUpper, severeHarmOR, importantBenefitOR, isNI, niMarginOR} = cfg;
+  const tabsDiv = document.getElementById('plotTabs');
+  const plotsDiv = document.getElementById('plotContainers');
+  tabsDiv.innerHTML = ''; plotsDiv.innerHTML = '';
+
+  const allNames = ['Combined', ...results.map(r=>r.name)];
+
+  allNames.forEach((name, idx) => {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (idx===0?' active':'');
+    btn.textContent = name.length>18 ? name.substring(0,16)+'...' : name;
+    btn.title = name;
+    btn.onclick = () => {
+      tabsDiv.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      plotsDiv.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+      document.getElementById('plot_'+idx).classList.add('active');
+      const plotEl = document.getElementById('plotly_'+idx);
+      if(plotEl && plotEl.data) { try { Plotly.Plots.resize(plotEl); } catch(e){} }
+      const cdfEl = document.getElementById('cdf_'+idx);
+      if(cdfEl && cdfEl.data) { try { Plotly.Plots.resize(cdfEl); } catch(e){} }
+    };
+    tabsDiv.appendChild(btn);
+
+    const container = document.createElement('div');
+    container.className = 'tab-content' + (idx===0?' active':'');
+    container.id = 'plot_'+idx;
+    if(idx > 0) {
+      const gridWrap = document.createElement('div');
+      gridWrap.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px;overflow:visible;';
+      const plotDiv = document.createElement('div');
+      plotDiv.id = 'plotly_'+idx; plotDiv.style.cssText = 'width:100%;height:380px;min-width:0;';
+      const cdfDiv = document.createElement('div');
+      cdfDiv.id = 'cdf_'+idx; cdfDiv.style.cssText = 'width:100%;height:380px;min-width:0;';
+      gridWrap.appendChild(plotDiv);
+      gridWrap.appendChild(cdfDiv);
+      container.appendChild(gridWrap);
+    } else {
+      const plotDiv = document.createElement('div');
+      plotDiv.id = 'plotly_'+idx; plotDiv.style.cssText = 'width:100%;height:400px;';
+      container.appendChild(plotDiv);
+    }
+    plotsDiv.appendChild(container);
+  });
+
+  const allMeans = results.map(r=>r.post.mean), allSDs = results.map(r=>r.post.sd);
+  const xMin = Math.min(...allMeans) - 3*Math.max(...allSDs);
+  const xMax = Math.max(...allMeans) + 3*Math.max(...allSDs);
+  const xVals = []; for(let x=xMin; x<=xMax; x+=(xMax-xMin)/500) xVals.push(x);
+
+  // Combined plot
+  const combinedTraces = [];
+  const colors = ['#1a56db','#dc2626','#16a34a','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6366f1'];
+  results.forEach((r,i) => {
+    combinedTraces.push({x:xVals, y:xVals.map(x=>normalPDF(x,r.post.mean,r.post.sd)), type:'scatter', mode:'lines', name:r.name, line:{color:colors[i%colors.length], width:2}});
+  });
+  combinedTraces.push({x:[0,0], y:[0, Math.max(...results.map(r=>normalPDF(r.post.mean,r.post.mean,r.post.sd)))], type:'scatter', mode:'lines', name:`${measure.short}=1`, line:{color:'black', width:1, dash:'dash'}});
+
+  const combinedShapes = [];
+  const combinedAnnotations = [];
+  if(isNI && niMarginOR) {
+    const combinedPeakY = Math.max(...results.map(r=>normalPDF(r.post.mean,r.post.mean,r.post.sd)));
+    combinedShapes.push({type:'line', x0:Math.log(niMarginOR), x1:Math.log(niMarginOR), y0:0, y1:combinedPeakY, line:{color:'#0369a1',width:2,dash:'dashdot'}});
+    combinedAnnotations.push({x:Math.log(niMarginOR), y:combinedPeakY, text:`NI Margin (${measure.short}=${niMarginOR.toFixed(2)})`, showarrow:true, arrowhead:0, ax:40, ay:-20, font:{size:11,color:'#0369a1'}});
+  }
+
+  Plotly.newPlot('plotly_0', combinedTraces, {
+    title:'All Posterior Distributions', xaxis:{title:`log(${measure.short})`, zeroline:true}, yaxis:{title:'Density'},
+    legend:{x:0.7, y:0.95}, shapes:combinedShapes, annotations:combinedAnnotations, margin:{t:50}, separators:'. '
+  }, {responsive:true});
+
+  // Individual plots
+  results.forEach((r,i) => {
+    const yPost = xVals.map(x => normalPDF(x, r.post.mean, r.post.sd));
+    const yPrior = xVals.map(x => normalPDF(x, r.prior.mean, r.prior.sd > 100 ? 2 : r.prior.sd));
+    const traces = [];
+    if(r.prior.sd < 100) { traces.push({x:xVals, y:yPrior, type:'scatter', mode:'lines', name:'Prior', line:{color:'#9ca3af', width:2, dash:'dash'}}); }
+    traces.push({x:xVals, y:yPost, type:'scatter', mode:'lines', name:'Posterior', line:{color:'#1a56db', width:2.5}});
+
+    const benefitX=[], benefitY=[], harmX=[], harmY=[], severeX=[], severeY=[];
+    xVals.forEach((x,j) => {
+      if(outcomeIsBad) {
+        if(x < 0) { benefitX.push(x); benefitY.push(yPost[j]); }
+        if(x > 0) { harmX.push(x); harmY.push(yPost[j]); }
+        if(x > Math.log(severeHarmOR)) { severeX.push(x); severeY.push(yPost[j]); }
+      } else {
+        if(x > 0) { benefitX.push(x); benefitY.push(yPost[j]); }
+        if(x < 0) { harmX.push(x); harmY.push(yPost[j]); }
+        if(x < Math.log(1/severeHarmOR)) { severeX.push(x); severeY.push(yPost[j]); }
+      }
+    });
+    traces.push({x:benefitX, y:benefitY, type:'scatter', fill:'tozeroy', fillcolor:'rgba(22,163,74,0.15)', line:{width:0}, name:'Benefit', showlegend:true});
+    traces.push({x:harmX, y:harmY, type:'scatter', fill:'tozeroy', fillcolor:'rgba(220,38,38,0.12)', line:{width:0}, name:'Harm', showlegend:true});
+    if(severeX.length>0) traces.push({x:severeX, y:severeY, type:'scatter', fill:'tozeroy', fillcolor:'rgba(220,38,38,0.3)', line:{width:0}, name:'Severe', showlegend:true});
+    traces.push({x:[0,0],y:[0,normalPDF(r.post.mean,r.post.mean,r.post.sd)*1.05],type:'scatter',mode:'lines',name:`${measure.short}=1`,line:{color:'black',width:1,dash:'dash'},showlegend:false});
+
+    const densityShapes = [];
+    const densityAnnotations = [];
+    if(isNI && niMarginOR) {
+      const peakY = normalPDF(r.post.mean,r.post.mean,r.post.sd)*1.05;
+      densityShapes.push({type:'line', x0:Math.log(niMarginOR), x1:Math.log(niMarginOR), y0:0, y1:peakY, line:{color:'#0369a1',width:2,dash:'dashdot'}});
+      densityAnnotations.push({x:Math.log(niMarginOR), y:peakY, text:'NI Margin', showarrow:true, arrowhead:0, ax:30, ay:-20, font:{size:10,color:'#0369a1'}});
+    }
+
+    let annotation;
+    if(isNI && r.pNI !== null) {
+      annotation = `P(NI)=${(r.pNI*100).toFixed(1)}%  P(Sup)=${(r.pBenefit*100).toFixed(1)}%  P(Sev.Harm)=${(r.pSevereHarm*100).toFixed(1)}%`;
+    } else {
+      annotation = `P(ben)=${(r.pBenefit*100).toFixed(1)}%  P(harm)=${(r.pHarm*100).toFixed(1)}%  P(sev)=${(r.pSevereHarm*100).toFixed(1)}%`;
+    }
+    densityAnnotations.push({x:0.5,y:1.08,xref:'paper',yref:'paper',text:annotation,showarrow:false,font:{size:11,color:'#4b5563'}});
+
+    Plotly.newPlot('plotly_'+(i+1), traces, {
+      title:`${r.name} — Posterior Density`, xaxis:{title:`log(${measure.short})`, zeroline:true}, yaxis:{title:'Density'},
+      annotations:densityAnnotations,
+      shapes:densityShapes, margin:{t:60, r:20, l:50, b:45}, height:380, legend:{x:0.65,y:0.95}, separators:'. '
+    }, {responsive:true});
+
+    // ---- CDF PLOT ----
+    const orMin = 0.3, orMax = 3.0, nPts = 500;
+    const orVals = [], cdfVals = [];
+    for(let j=0; j<=nPts; j++) { const orVal = orMin + (orMax-orMin)*j/nPts; orVals.push(orVal); cdfVals.push(normalCDF(Math.log(orVal), r.post.mean, r.post.sd)); }
+
+    const yLabel = outcomeIsBad ? `P(${measure.short} < threshold)` : `P(${measure.short} > threshold)`;
+    const yVals_cdf = outcomeIsBad ? cdfVals : cdfVals.map(v => 1-v);
+    const cdfTraces = [{x:orVals, y:yVals_cdf, type:'scatter', mode:'lines', name:yLabel, line:{color:'#1a56db', width:2.5}, showlegend:false}];
+    const cdfShapes = [{type:'line', x0:1, x1:1, y0:0, y1:1, line:{color:'black',width:1,dash:'dot'}}];
+    const cdfAnnotations = [];
+
+    // NI margin on CDF
+    if(isNI && niMarginOR && r.pNI !== null) {
+      const niY = outcomeIsBad ? normalCDF(Math.log(niMarginOR), r.post.mean, r.post.sd) : 1-normalCDF(Math.log(1/niMarginOR), r.post.mean, r.post.sd);
+      const niX = outcomeIsBad ? niMarginOR : 1/niMarginOR;
+      cdfTraces.push({x:[niX], y:[niY], type:'scatter', mode:'markers+text', marker:{size:12,color:'#0369a1',symbol:'star'}, text:[`P(NI)=${(r.pNI*100).toFixed(1)}%`], textposition:'bottom left', textfont:{size:12,color:'#0369a1'}, showlegend:false});
+      cdfShapes.push({type:'line', x0:niX, x1:niX, y0:0, y1:1, line:{color:'#0369a1',width:2,dash:'dashdot'}});
+      cdfShapes.push({type:'line', x0:orMin, x1:niX, y0:niY, y1:niY, line:{color:'#0369a1',width:1,dash:'dash'}});
+      // P(Superiority) marker at ratio=1
+      const supY = outcomeIsBad ? normalCDF(0, r.post.mean, r.post.sd) : 1-normalCDF(0, r.post.mean, r.post.sd);
+      cdfTraces.push({x:[1.0], y:[supY], type:'scatter', mode:'markers+text', marker:{size:10,color:'#15803d',symbol:'circle'}, text:[`P(Sup)=${(r.pBenefit*100).toFixed(1)}%`], textposition:'top right', textfont:{size:11,color:'#15803d'}, showlegend:false});
+      cdfShapes.push({type:'line', x0:orMin, x1:1.0, y0:supY, y1:supY, line:{color:'#15803d',width:1,dash:'dash'}});
+    }
+
+    Plotly.newPlot('cdf_'+(i+1), cdfTraces, {
+      title:`${r.name} — CDF`, xaxis:{title:`${measure.short}`, range:[orMin, 2.0]},
+      yaxis:{title:yLabel, range:[0, 1.02]}, shapes:cdfShapes, annotations:cdfAnnotations,
+      margin:{t:60, r:20, l:50, b:45}, height:380, separators:'. '
+    }, {responsive:true});
+  });
+}
+
+function createForestPlot(results, cfg, het) {
+  const {measure, outcomeIsBad, isNI, niMarginOR} = cfg;
+  const allItems = [];
+  const nonFlat = results.filter(r=>r.name!=='Flat (Reference)');
+  for(const r of nonFlat) allItems.push({name:r.name, or:r.postOR, lo:r.crI_lower, hi:r.crI_upper, belief:r.prior.belief});
+  if(het && het.muPooled !== undefined) allItems.push({name:'mean effect (μ)', or:Math.exp(het.muPooled), lo:Math.exp(het.muPooledCrI[0]), hi:Math.exp(het.muPooledCrI[1]), belief:'Pooled'});
+
+  const names = allItems.map(r=>r.name).reverse();
+  const means = allItems.map(r=>r.or).reverse();
+  const errLow = means.map((m,i)=>m-allItems[allItems.length-1-i].lo);
+  const errHigh = means.map((m,i)=>allItems[allItems.length-1-i].hi-m);
+  const plotColors = allItems.map(r => r.belief==='Pooled'?'#000':r.belief==='Optimistic'?'#16a34a':r.belief==='Pessimistic'?'#dc2626':r.belief==='Custom'?'#8b5cf6':'#1a56db').reverse();
+  const markerSizes = allItems.map(r => r.belief==='Pooled'?12:9).reverse();
+
+  const shapes = [{type:'line',x0:1,x1:1,y0:-0.5,y1:names.length-0.5,line:{color:'black',width:1,dash:'dash'}}];
+  const annotations = [];
+  if(isNI && niMarginOR) {
+    shapes.push({type:'line',x0:niMarginOR,x1:niMarginOR,y0:-0.5,y1:names.length-0.5,line:{color:'#0369a1',width:2,dash:'dashdot'}});
+    annotations.push({x:niMarginOR, y:names.length-0.5, yshift:14, text:`NI Margin (${measure.short}=${niMarginOR.toFixed(2)})`, showarrow:false, font:{size:11,color:'#0369a1'}});
+  }
+
+  Plotly.newPlot('forestPlot', [{x:means, y:names, type:'scatter', mode:'markers', marker:{size:markerSizes,color:plotColors}, error_x:{type:'data',symmetric:false,array:errHigh,arrayminus:errLow,thickness:2,width:6,color:'#6b7280'}, showlegend:false}], {
+    title:`Forest Plot — Posterior ${measure.short} (95% CrI)`, xaxis:{title:`${measure.short} (95% CrI)`}, yaxis:{automargin:true},
+    shapes:shapes, annotations:annotations,
+    margin:{l:180,t:50}, height:Math.max(350, allItems.length*50+100), separators:'. '
+  }, {responsive:true});
+}
+
+function createHetDisplay(het, results, measure) {
+  const div = document.getElementById('hetResults');
+  const I2pct = (het.I2atMedian*100).toFixed(1);
+  let hetText = het.I2atMedian<0.25 ? `Low heterogeneity — results are <strong>robust</strong> (~${I2pct}%).` :
+    het.I2atMedian<0.50 ? `Moderate heterogeneity — prior choice has <strong>moderate</strong> impact (~${I2pct}%).` :
+    het.I2atMedian<0.75 ? `Substantial heterogeneity — results are <strong>sensitive</strong> to prior choice (~${I2pct}%).` :
+    `High heterogeneity — results are <strong>very sensitive</strong> (~${I2pct}%). Interpret with caution.`;
+
+  div.innerHTML = `<div class="grid-3" style="margin-bottom:16px;">
+    <div class="stat-box"><div class="value">${I2pct}%</div><div class="label">I² at median τ</div></div>
+    <div class="stat-box"><div class="value">${het.medianTau.toFixed(4)}</div><div class="label">Median τ</div></div>
+    <div class="stat-box"><div class="value">${Math.exp(het.muPooled).toFixed(2)}</div><div class="label">Pooled ${measure.short}</div></div>
+  </div><div class="interpretation"><p>${hetText}</p>
+  <p style="font-size:0.82rem;color:var(--text-light);">DuMouchel prior for τ (s₀=${het.s0.toFixed(4)}). Zampieri et al. Appendix 3.</p></div>`;
+
+  const tauVals=[], i2Curve=[], tauMax=0.35;
+  for(let i=0; i<=500; i++) { const tau=(i/500)*tauMax; tauVals.push(tau); i2Curve.push(het.I2func(tau)); }
+
+  const hetPlotEl = document.getElementById('hetPlot');
+  if(!hetPlotEl) return;
+  try {
+    Plotly.newPlot(hetPlotEl, [
+      {x:tauVals, y:i2Curve, type:'scatter', mode:'lines', line:{color:'black',width:2.5}, showlegend:false},
+      {x:[het.medianTau], y:[het.I2atMedian], type:'scatter', mode:'markers', name:`Median τ=${het.medianTau.toFixed(4)}`, marker:{size:10,color:'#dc2626',symbol:'diamond'}}
+    ], {
+      title:`${I2pct}% heterogeneity at median τ`, xaxis:{title:'Tau',range:[0,tauMax]}, yaxis:{title:'I²',range:[0,1]},
+      shapes:[{type:'line',x0:het.medianTau,x1:het.medianTau,y0:0,y1:het.I2atMedian,line:{color:'black',width:1,dash:'dash'}},
+              {type:'line',x0:het.medianTau,x1:tauMax,y0:het.I2atMedian,y1:het.I2atMedian,line:{color:'black',width:1,dash:'dash'}}],
+      margin:{t:50,b:50,l:60,r:30}, height:350, separators:'. '
+    }, {responsive:true});
+  } catch(e) { console.error('hetPlot error:', e); }
+}
+
+// ==========================================
+// TEXT INTERPRETATION
+// ==========================================
+
+function createInterpretation(results, data, het, studyName, cfg) {
+  const {measure, outcomeIsBad, ropeLower, ropeUpper, severeHarmOR, importantBenefitOR, scenarioLabel, isNI, niMarginOR} = cfg;
+  const div = document.getElementById('textInterpretation');
+  const flat = results.find(r=>r.name==='Flat (Reference)');
+  const nonFlat = results.filter(r=>r.name!=='Flat (Reference)');
+
+  const benefitWord = outcomeIsBad ? `benefit (${measure.short} < 1)` : `benefit (${measure.short} > 1)`;
+  const harmWord = outcomeIsBad ? `harm (${measure.short} > 1)` : `harm (${measure.short} < 1)`;
+  const severeHarmWord = outcomeIsBad ? `severe harm (${measure.short} > ${severeHarmOR})` : `severe harm (${measure.short} < ${(1/severeHarmOR).toFixed(2)})`;
+  const importantBenefitWord = outcomeIsBad ? `important benefit (${measure.short} < ${importantBenefitOR})` : `important benefit (${measure.short} > ${(1/importantBenefitOR).toFixed(2)})`;
+
+  const pBenRange = [Math.min(...nonFlat.map(r=>r.pBenefit)), Math.max(...nonFlat.map(r=>r.pBenefit))];
+  const pHarmRange = [Math.min(...nonFlat.map(r=>r.pHarm)), Math.max(...nonFlat.map(r=>r.pHarm))];
+  const pSevRange = [Math.min(...nonFlat.map(r=>r.pSevereHarm)), Math.max(...nonFlat.map(r=>r.pSevereHarm))];
+  const ropeRange = [Math.min(...nonFlat.map(r=>r.rope)), Math.max(...nonFlat.map(r=>r.rope))];
+
+  let overallDir = pBenRange[0]>0.9?'strong_benefit':pBenRange[0]>0.7?'moderate_benefit':pHarmRange[0]>0.9?'strong_harm':pHarmRange[0]>0.7?'moderate_harm':'uncertain';
+
+  let conclusionText = '';
+  if(overallDir==='strong_benefit') conclusionText = `The Bayesian re-analysis of ${studyName} demonstrates a <strong>high probability of ${benefitWord}</strong> across all priors (${(pBenRange[0]*100).toFixed(1)}%–${(pBenRange[1]*100).toFixed(1)}%).`;
+  else if(overallDir==='moderate_benefit') conclusionText = `The Bayesian re-analysis of ${studyName} suggests a <strong>moderate to high probability of ${benefitWord}</strong> (${(pBenRange[0]*100).toFixed(1)}%–${(pBenRange[1]*100).toFixed(1)}%).`;
+  else if(overallDir==='strong_harm') conclusionText = `The Bayesian re-analysis of ${studyName} demonstrates a <strong>high probability of ${harmWord}</strong> across all priors (${(pHarmRange[0]*100).toFixed(1)}%–${(pHarmRange[1]*100).toFixed(1)}%).`;
+  else if(overallDir==='moderate_harm') conclusionText = `The Bayesian re-analysis of ${studyName} suggests a <strong>moderate to high probability of ${harmWord}</strong> (${(pHarmRange[0]*100).toFixed(1)}%–${(pHarmRange[1]*100).toFixed(1)}%).`;
+  else conclusionText = `The Bayesian re-analysis of ${studyName} shows <strong>uncertainty</strong>. P(benefit) = ${(pBenRange[0]*100).toFixed(1)}%–${(pBenRange[1]*100).toFixed(1)}%, P(harm) = ${(pHarmRange[0]*100).toFixed(1)}%–${(pHarmRange[1]*100).toFixed(1)}%.`;
+
+  let html = `<div class="interpretation"><h4>Overall Conclusion</h4><p>${conclusionText}</p>`;
+
+  // NI conclusion
+  if(isNI && nonFlat[0].pNI !== null) {
+    const pNIRange = [Math.min(...nonFlat.map(r=>r.pNI)), Math.max(...nonFlat.map(r=>r.pNI))];
+    let niConclusion = '';
+    if(pNIRange[0] > 0.975) niConclusion = `<strong>Strong evidence of non-inferiority</strong> (P(NI) = ${(pNIRange[0]*100).toFixed(1)}%–${(pNIRange[1]*100).toFixed(1)}% across all priors, NI margin ${measure.short} = ${niMarginOR.toFixed(3)}).`;
+    else if(pNIRange[0] > 0.95) niConclusion = `<strong>Good evidence of non-inferiority</strong> (P(NI) = ${(pNIRange[0]*100).toFixed(1)}%–${(pNIRange[1]*100).toFixed(1)}%).`;
+    else if(pNIRange[0] > 0.80) niConclusion = `<strong>Suggestive but inconclusive</strong> evidence of non-inferiority (P(NI) = ${(pNIRange[0]*100).toFixed(1)}%–${(pNIRange[1]*100).toFixed(1)}%). Some priors do not reach the 95% threshold.`;
+    else niConclusion = `<strong>Cannot conclude non-inferiority</strong> (P(NI) = ${(pNIRange[0]*100).toFixed(1)}%–${(pNIRange[1]*100).toFixed(1)}%). The posterior probability does not consistently exceed 95%.`;
+    html += `<p style="color:#0369a1;"><strong>Non-Inferiority:</strong> ${niConclusion}</p>`;
+    html += `<p><strong>Superiority:</strong> P(Superiority) = ${(pBenRange[0]*100).toFixed(1)}%–${(pBenRange[1]*100).toFixed(1)}% across priors (${outcomeIsBad ? measure.short + ' < 1' : measure.short + ' > 1'}).</p>`;
+  }
+
+  html += `<p style="font-size:0.82rem;color:var(--text-light);">Prior scenario: ${scenarioLabel}</p></div>`;
+
+  // Flat prior
+  html += `<div class="interpretation"><h4>Frequentist Reference (Flat Prior)</h4>
+    <p>Posterior ${measure.short} = <strong>${flat.postOR.toFixed(2)}</strong> (95% CrI: ${flat.crI_lower.toFixed(2)} – ${flat.crI_upper.toFixed(2)}).`;
+  if(isNI && flat.pNI !== null) {
+    html += ` P(NI) = ${(flat.pNI*100).toFixed(1)}%, P(Superiority) = ${(flat.pBenefit*100).toFixed(1)}%.`;
+  } else {
+    html += ` P(${benefitWord}) = ${(flat.pBenefit*100).toFixed(1)}%, P(${harmWord}) = ${(flat.pHarm*100).toFixed(1)}%.`;
+  }
+  html += `</p></div>`;
+
+  // Per-prior
+  html += `<div class="interpretation"><h4>Prior-Specific Results</h4>`;
+  for(const r of nonFlat) {
+    let priorDesc = r.prior.belief==='Neutral'?'skeptical prior':r.prior.belief==='Optimistic'?'optimistic':r.prior.belief==='Pessimistic'?'pessimistic':'custom';
+    if(isNI && r.pNI !== null) {
+      html += `<p><strong>${r.name}</strong> (${priorDesc}, ${r.prior.strength}): ${measure.short} = ${r.postOR.toFixed(2)} (${r.crI_lower.toFixed(2)}–${r.crI_upper.toFixed(2)}). P(NI) = ${(r.pNI*100).toFixed(1)}%, P(Sup) = ${(r.pBenefit*100).toFixed(1)}%, P(${severeHarmWord}) = ${(r.pSevereHarm*100).toFixed(1)}%.</p>`;
+    } else {
+      html += `<p><strong>${r.name}</strong> (${priorDesc}, ${r.prior.strength}): ${measure.short} = ${r.postOR.toFixed(2)} (${r.crI_lower.toFixed(2)}–${r.crI_upper.toFixed(2)}). P(ben) = ${(r.pBenefit*100).toFixed(1)}%, P(harm) = ${(r.pHarm*100).toFixed(1)}%, P(${severeHarmWord}) = ${(r.pSevereHarm*100).toFixed(1)}%.</p>`;
+    }
+  }
+  html += `</div>`;
+
+  // Clinically important
+  html += `<div class="interpretation"><h4>Clinically Important Effects</h4>
+    <p>P(${severeHarmWord}): ${(pSevRange[0]*100).toFixed(1)}%–${(pSevRange[1]*100).toFixed(1)}%. P(${importantBenefitWord}): ${(Math.min(...nonFlat.map(r=>r.pImportantBenefit))*100).toFixed(1)}%–${(Math.max(...nonFlat.map(r=>r.pImportantBenefit))*100).toFixed(1)}%.</p>
+    <p>ROPE (${ropeLower.toFixed(2)}–${ropeUpper.toFixed(2)}): ${(ropeRange[0]*100).toFixed(1)}%–${(ropeRange[1]*100).toFixed(1)}%.</p></div>`;
+
+  // Heterogeneity
+  html += `<div class="interpretation"><h4>Sensitivity to Prior Choice</h4>
+    <p>Median τ = <strong>${het.medianTau.toFixed(4)}</strong>, I² = <strong>${(het.I2atMedian*100).toFixed(1)}%</strong>. ${het.I2atMedian<0.25?'Low heterogeneity — robust results.':het.I2atMedian<0.50?'Moderate heterogeneity.':'Substantial heterogeneity — interpret with caution.'}</p></div>`;
+
+  div.innerHTML = html;
+}
+
+// ==========================================
+// LOAD EXAMPLE
+// ==========================================
+
+function loadARTExample() {
+  document.getElementById('designSup').checked = true;
+  document.getElementById('niSettings').classList.add('hidden');
+  document.getElementById('inputOR').checked = true;
+  document.getElementById('inputOR').dispatchEvent(new Event('change'));
+  document.getElementById('ratioInput').classList.remove('hidden');
+  document.getElementById('eventsInput').classList.add('hidden');
+  document.getElementById('logORInput').classList.add('hidden');
+  document.getElementById('ratioLabel').textContent = 'Odds Ratio';
+  document.getElementById('effectSize').value = '1.27';
+  document.getElementById('ciLower').value = '0.99';
+  document.getElementById('ciUpper').value = '1.63';
+  document.getElementById('studyName').value = 'ART Trial';
+  document.getElementById('outcomeType').value = 'bad';
+  document.getElementById('expectedOR').value = '0.66';
+  document.getElementById('priorScenario').value = 'benefit_no_outlier';
+  updatePriorScenario();
+  setTimeout(() => runAnalysis(), 300);
+}
+
+// Threshold label updates
+function updateThresholdLabels() {
+  const measure = getMeasureMeta();
+  const isBad = document.getElementById('outcomeType').value === 'bad';
+  const sevHarm = parseFloat(document.getElementById('severeHarmOR').value) || 1.25;
+  const impBen = parseFloat(document.getElementById('importantBenefitOR').value) || 0.80;
+  const ropeLo = document.getElementById('ropeLower').value;
+  const ropeHi = document.getElementById('ropeUpper').value;
+
+  const infoDiv = document.getElementById('thresholdInfo');
+  const sevDesc = document.getElementById('severeHarmDesc');
+  const benDesc = document.getElementById('importantBenefitDesc');
+
+  if(isBad) {
+    infoDiv.innerHTML = `<strong>Outcome: Bad (e.g., mortality)</strong> — ${measure.short} &lt; 1 = benefit, ${measure.short} &gt; 1 = harm<br>
+      <strong>P(Benefit)</strong> = P(${measure.short} &lt; 1.0)<br>
+      <strong>P(Important Benefit)</strong> = P(${measure.short} &lt; ${impBen})<br>
+      <strong>P(Severe Harm)</strong> = P(${measure.short} &gt; ${sevHarm})<br>
+      <strong>ROPE</strong> = P(${ropeLo} &lt; ${measure.short} &lt; ${ropeHi})`;
+    sevDesc.textContent = `P(Severe Harm) = P(${measure.short} > ${sevHarm})`;
+    benDesc.textContent = `P(Imp. Benefit) = P(${measure.short} < ${impBen})`;
+  } else {
+    infoDiv.innerHTML = `<strong>Outcome: Good (e.g., survival)</strong> — ${measure.short} &gt; 1 = benefit, ${measure.short} &lt; 1 = harm<br>
+      <strong>P(Benefit)</strong> = P(${measure.short} &gt; 1.0)<br>
+      <strong>P(Important Benefit)</strong> = P(${measure.short} &gt; ${(1/impBen).toFixed(2)})<br>
+      <strong>P(Severe Harm)</strong> = P(${measure.short} &lt; ${(1/sevHarm).toFixed(2)})<br>
+      <strong>ROPE</strong> = P(${ropeLo} &lt; ${measure.short} &lt; ${ropeHi})`;
+    sevDesc.textContent = `P(Severe Harm) = P(${measure.short} < ${(1/sevHarm).toFixed(2)})`;
+    benDesc.textContent = `P(Imp. Benefit) = P(${measure.short} > ${(1/impBen).toFixed(2)})`;
+  }
+}
+
+document.getElementById('outcomeType').addEventListener('change', updateThresholdLabels);
+document.getElementById('severeHarmOR').addEventListener('input', updateThresholdLabels);
+document.getElementById('importantBenefitOR').addEventListener('input', updateThresholdLabels);
+document.getElementById('ropeLower').addEventListener('input', updateThresholdLabels);
+document.getElementById('ropeUpper').addEventListener('input', updateThresholdLabels);
+
+updateMeasureUI();
+updatePriorScenario();
+updateThresholdLabels();
+</script>
+</body>
+</html>
