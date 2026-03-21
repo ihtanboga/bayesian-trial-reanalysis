@@ -2,9 +2,14 @@
 
 A single-page clinical trial workbench for **Bayesian re-analysis** of superiority and non-inferiority RCTs, based on the framework described by [Zampieri et al. (2021)](https://doi.org/10.1164/rccm.202006-2381CP).
 
-**[Live Demo](https://ihtanboga.github.io/bayesian-trial-reanalysis/)**
-
 ![screenshot](https://img.shields.io/badge/status-stable-green) ![license](https://img.shields.io/badge/license-MIT-blue)
+
+<br>
+
+<h2 align="center"><a href="https://ihtanboga.github.io/bayesian-trial-reanalysis/">>>> Open Live Demo <<<</a></h2>
+<p align="center">https://ihtanboga.github.io/bayesian-trial-reanalysis/</p>
+
+<br>
 
 ---
 
