@@ -82,44 +82,6 @@ For NI trials, the tool provides:
 - NI margin visualization on density plots, CDF plots, and forest plots
 - Support for both ratio-scale and absolute risk-difference NI margins
 
----
-
-## RCT Verdict Classifier (classifier.html)
-
-A second tool in this repository that goes beyond Bayesian analysis to provide a **complete trial classification** using the CI + MCID + Bayesian framework.
-
-### What it does
-
-Enter a trial result (HR/RR/OR + 95% CI + MCID) and get:
-
-1. **6-class verdict**: Positive · Imprecise(+) · Neutral · Negative · Inconclusive/Underpowered · Harmful
-2. **Step-by-step CI + MCID reasoning** — exactly why this classification, not another
-3. **Bayesian complementary analysis** — 3 priors (Skeptical/Optimistic/Pessimistic), full posterior probability table
-4. **Framework reference figures** — decision algorithm and scenario diagrams shown conditionally by verdict
-5. **Downloadable HTML report** — self-contained, shareable
-
-### Classification logic
-
-| Class | p | CI position |
-|---|---|---|
-| **Positive** | < 0.05 | Entire CI past MCID-benefit |
-| **Imprecise (+)** | < 0.05 | CI on benefit side but crosses MCID |
-| **Neutral** | ≥ 0.05 | Narrow CI, both MCID-benefit and MCID-harm excluded |
-| **Negative** | ≥ 0.05 | Benefit excluded; harm not excluded |
-| **Inconclusive / Underpowered** | ≥ 0.05 | Wide CI spanning both MCID thresholds |
-| **Harmful** | < 0.05 | Entire CI past MCID-harm |
-
-> *"Underpowered" (the cause) and "Inconclusive" (the result) are the same classification — the trial is underpowered and therefore the result is inconclusive (Harrell; decision algorithm Step 3).*
-
-### Method references
-
-- Pocock SJ, Stone GW. *NEJM* 2016;375:861–870
-- Hawkins AT, Samuels JD. *JAMA* 2021;326:1875–76
-- Zampieri FG et al. *AJRCCM* 2021;203:543–552
-- Altman DG, Bland JM. *BMJ* 1995;311:485
-
----
-
 ## Reference
 
 Zampieri FG, Casey JD, Shankar-Hari M, Harrell FE Jr, Harhay MO. *Using Bayesian Methods to Augment the Interpretation of Critical Care Trials.* Am J Respir Crit Care Med. 2021;203(5):543-552. [doi:10.1164/rccm.202006-2381CP](https://doi.org/10.1164/rccm.202006-2381CP)
